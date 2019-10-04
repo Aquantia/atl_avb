@@ -1067,7 +1067,8 @@ static int barfilter(const struct dirent *dir)
 
 static void unmap_bars(struct atl_adapter *adapter)
 {
-	for (int i = 0; i < 6; i++) {
+	int i;
+	for (i = 0; i < 6; i++) {
 		struct mmap_res *bar = &adapter->bar[i];
 		if (bar->vaddr)
 			munmap(bar->vaddr, bar->size);
@@ -2285,9 +2286,13 @@ int atl_setup_filter(device_t *dev, unsigned int queue_index,
 			fsp->h_u.udp_ip4_spec.pdst = htobe16(udp_dest_port);
 			fsp->m_u.udp_ip4_spec.pdst = 0xffff;
 		} else {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0)
+			return -ENXIO;
+#else
 			fsp->flow_type |= UDP_V6_FLOW;
 			fsp->h_u.udp_ip6_spec.pdst = htobe16(udp_dest_port);
 			fsp->m_u.udp_ip6_spec.pdst = 0xffff;
+#endif
 		}
 	}
 	dump(LOG_LVL_DEBUG, "New filter: ", (uint8_t *)fsp, sizeof(*fsp));

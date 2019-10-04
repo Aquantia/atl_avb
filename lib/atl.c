@@ -57,6 +57,7 @@
 #include <net/if.h>
 #include <dirent.h>
 
+#include <linux/version.h>
 #include <linux/types.h>
 #include <linux/ethtool.h>
 #include <linux/sockios.h>

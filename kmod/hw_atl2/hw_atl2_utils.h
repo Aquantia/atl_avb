@@ -1,68 +1,31 @@
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* Atlantic Network Driver
+ * Copyright (C) 2020 Marvell International Ltd.
  */
 
-/* File hw_atl2_utils.h: Declaration of common functions for Atlantic hardware
- * abstraction layer.
+/* File hw_atl2_utils.h: Declaration of common functions for Atlantic2 Antigua
+ * hardware abstraction layer.
  */
 
 #ifndef HW_ATL2_UTILS_H
 #define HW_ATL2_UTILS_H
 
-#define HW_ATL2_FLUSH() { (void)aq_hw_read_reg(self, 0x10); }
-
-/* Hardware tx descriptor */
-struct __packed hw_atl2_txd_s {
-	u64 buf_addr;
-	u32 ctl;
-	u32 ctl2; /* 63..46 - payload length, 45 - ctx enable, 44 - ctx index */
-};
-
 /* Hardware tx launch time descriptor */
-struct __packed hw_atl2_txts_s {
+struct hw_atl2_txts_s {
 	u64 ts;
 	u32 ctrl;
 	u32 reserved;
 };
 
-/* Hardware tx context descriptor */
-struct __packed hw_atl2_txc_s {
-	u32 rsvd;
-	u32 len;
-	u32 ctl;
-	u32 len2;
-};
-
-/* Hardware rx descriptor */
-struct __packed hw_atl2_rxd_s {
-	u64 buf_addr;
-	u64 hdr_addr;
-};
-
-/* Hardware rx descriptor writeback */
-struct __packed hw_atl2_rxd_wb_s {
-	u32 type;
-	u32 rss_hash;
-	u16 status;
-	u16 pkt_len;
-	u16 next_desc_ptr;
-	u16 vlan;
-};
-
 /* Hardware rx HW TIMESTAMP writeback */
-struct __packed hw_atl2_rxd_hwts_wb_s {
+struct hw_atl2_rxd_hwts_wb_s {
 	u32 sec_hw;
 	u32 ns;
 	u32 sec_lw0;
 	u32 sec_lw1;
 };
 
-struct __packed hw_aq_a2_ptp_offset {
+struct hw_aq_a2_ptp_offset {
 	u16 ingress_100;
 	u16 egress_100;
 	u16 ingress_1000;
@@ -84,504 +47,604 @@ enum e_atl2_gpio_functiontion {
 /* F W    A P I */
 
 struct link_options_s {
-	uint32_t link_up:1;
-	uint32_t link_renegotiate:1;
-	uint32_t rsvd:2;
-	uint32_t internal_loopback:1;
-	uint32_t external_loopback:1;
-	uint32_t rsvd2:2;
+	u8 link_up:1;
+	u8 link_renegotiate:1;
+	u8 minimal_link_speed:1;
+	u8 internal_loopback:1;
+	u8 external_loopback:1;
+	u8 rate_10M_hd:1;
+	u8 rate_100M_hd:1;
+	u8 rate_1G_hd:1;
 
-	uint32_t rate_10M:1;
-	uint32_t rate_100M:1;
-	uint32_t rate_1G:1;
-	uint32_t rate_2P5G:1;
-	uint32_t rate_N2P5G:1;
-	uint32_t rate_5G:1;
-	uint32_t rate_N5G:1;
-	uint32_t rate_10G:1;
+	u8 rate_10M:1;
+	u8 rate_100M:1;
+	u8 rate_1G:1;
+	u8 rate_2P5G:1;
+	u8 rate_N2P5G:1;
+	u8 rate_5G:1;
+	u8 rate_N5G:1;
+	u8 rate_10G:1;
 
-	uint32_t eee_100M:1;
-	uint32_t eee_1G:1;
-	uint32_t eee_2P5G:1;
-	uint32_t eee_5G:1;
-	uint32_t eee_10G:1;
-	uint32_t rsvd3:3;
+	u8 eee_100M:1;
+	u8 eee_1G:1;
+	u8 eee_2P5G:1;
+	u8 eee_5G:1;
+	u8 eee_10G:1;
+	u8 rsvd3:3;
 
-	uint32_t pause_rx:1;
-	uint32_t pause_tx:1;
-	uint32_t rsvd4:1;
-	uint32_t downshift:1;
-	uint32_t downshift_retry:4;
+	u8 pause_rx:1;
+	u8 pause_tx:1;
+	u8 rsvd4:1;
+	u8 downshift:1;
+	u8 downshift_retry:4;
 };
 
 struct link_control_s {
-	uint32_t mode:4;
+	u8 mode:4;
+	u8 disable_crc_corruption:1;
+	u8 discard_short_frames:1;
+	u8 flow_control_mode:1;
+	u8 disable_length_check:1;
 
-	uint32_t disable_crc_corruption : 1;
-	uint32_t discard_short_frames : 1;
-	uint32_t flow_control_mode : 1;
-	uint32_t disable_length_check : 1;
-	uint32_t discard_errored_frames : 1;
-	uint32_t control_frame_enable : 1;
-	uint32_t enable_tx_padding : 1;
-	uint32_t enable_crc_forwarding : 1;
-	uint32_t enable_frame_padding_removal_rx: 1;
-	uint32_t promiscuous_mode: 1;
-	uint32_t rsvd:18;
+	u8 discard_errored_frames:1;
+	u8 control_frame_enable:1;
+	u8 enable_tx_padding:1;
+	u8 enable_crc_forwarding:1;
+	u8 enable_frame_padding_removal_rx: 1;
+	u8 promiscuous_mode: 1;
+	u8 rsvd:2;
+
+	u16 rsvd2;
 };
 
 struct thermal_shutdown_s {
-	uint32_t enable:1;
-	uint32_t rsvd:7;
+	u8 enable:1;
+	u8 warning_enable:1;
+	u8 rsvd:6;
 
-	uint32_t cold_temperature:8;
-	uint32_t warning_temperature:8;
-	uint32_t shutdown_temperature:8;
+	u8 shutdown_temperature;
+	u8 cold_temperature;
+	u8 warning_temperature;
 };
 
 struct mac_address_s {
-	uint8_t mac_address[6];
-	uint16_t rsvd;
+	u8 mac_address[6];
+};
+
+struct mac_address_aligned_s {
+	struct mac_address_s aligned;
+	u16 rsvd;
 };
 
 struct sleep_proxy_s {
 	struct wake_on_lan_s {
-		uint32_t wake_on_magic_packet:1;
-		uint32_t wake_on_pattern:1;
-		uint32_t wake_on_link_up:1;
-		uint32_t wake_on_link_down:1;
-		uint32_t wake_on_ping:1;
-		uint32_t wake_on_timer:1;
-		uint32_t rsvd:26;
+		u8 wake_on_magic_packet:1;
+		u8 wake_on_pattern:1;
+		u8 wake_on_link_up:1;
+		u8 wake_on_link_down:1;
+		u8 wake_on_ping:1;
+		u8 wake_on_timer:1;
+		u8 rsvd:2;
 
-		uint32_t link_up_timeout;
-		uint32_t link_down_timeout;
-		uint32_t timer;
+		u8 rsvd2;
+		u16 rsvd3;
 
-		struct {
-			uint32_t mask[4];
-			uint32_t crc32;
-		} wake_up_patterns[8];
+		u32 link_up_timeout;
+		u32 link_down_timeout;
+		u32 timer;
 	} wake_on_lan;
 
 	struct {
-		uint32_t arp_responder:1;
-		uint32_t echo_responder:1;
-		uint32_t igmp_client:1;
-		uint32_t echo_truncate:1;
-		uint32_t address_guard:1;
-		uint32_t ignore_fragmented:1;
-		uint32_t rsvd:2;
-		uint32_t echo_max_len:16;
-		uint32_t ipv4[16];
+		u32 mask[4];
+		u32 crc32;
+	} wake_up_pattern[8];
+
+	struct __packed {
+		u8 arp_responder:1;
+		u8 echo_responder:1;
+		u8 igmp_client:1;
+		u8 echo_truncate:1;
+		u8 address_guard:1;
+		u8 ignore_fragmented:1;
+		u8 rsvd:2;
+
+		u16 echo_max_len;
+		u8 rsvd2;
 	} ipv4_offload;
 
-	struct {
-		uint32_t ns_responder:1;
-		uint32_t echo_responder:1;
-		uint32_t mld_client:1;
-		uint32_t echo_truncate:1;
-		uint32_t address_guard:1;
-		uint32_t rsvd:3;
-		uint32_t echo_max_len:16;
-		uint32_t ipv6[16][4];
+	u32 ipv4_offload_addr[8];
+	u32 reserved[8];
+
+	struct __packed {
+		u8 ns_responder:1;
+		u8 echo_responder:1;
+		u8 mld_client:1;
+		u8 echo_truncate:1;
+		u8 address_guard:1;
+		u8 rsvd:3;
+
+		u16 echo_max_len;
+		u8 rsvd2;
 	} ipv6_offload;
 
+	u32 ipv6_offload_addr[16][4];
+
 	struct {
-		uint16_t ports[16];
+		u16 port[16];
 	} tcp_port_offload;
 
 	struct {
-		uint16_t ports[16];
+		u16 port[16];
 	} udp_port_offload;
 
-	struct ka4_offloads_s {
-		uint32_t retry_count;
-		uint32_t retry_interval;
-
-		struct ka4_offload_s {
-			uint32_t timeout;
-			uint16_t local_port;
-			uint16_t remote_port;
-			uint8_t remote_mac_addr[8];
-			uint32_t rsvd:32;
-			uint32_t rsvd2:32;
-			uint32_t rsvd3:16;
-			uint16_t win_size;
-			uint32_t seq_num;
-			uint32_t ack_num;
-			uint32_t local_ip;
-			uint32_t remote_ip;
-		} offloads[16];
+	struct {
+		u32 retry_count;
+		u32 retry_interval;
 	} ka4_offload;
 
-	struct ka6_offloads_s {
-		uint32_t retry_count;
-		uint32_t retry_interval;
+	struct {
+		u32 timeout;
+		u16 local_port;
+		u16 remote_port;
+		u8 remote_mac_addr[6];
+		u16 rsvd;
+		u32 rsvd2;
+		u32 rsvd3;
+		u16 rsvd4;
+		u16 win_size;
+		u32 seq_num;
+		u32 ack_num;
+		u32 local_ip;
+		u32 remote_ip;
+	} ka4_connection[16];
 
-		struct ka6_offload_s {
-			uint32_t timeout;
-			uint16_t local_port;
-			uint16_t remote_port;
-			uint8_t remote_mac_addr[8];
-			uint32_t rsvd:32;
-			uint32_t rsvd2:32;
-			uint32_t rsvd3:16;
-			uint16_t win_size;
-			uint32_t seq_num;
-			uint32_t ack_num;
-			uint32_t local_ip[4];
-			uint32_t remote_ip[4];
-		} offloads[16];
+	struct {
+		u32 retry_count;
+		u32 retry_interval;
 	} ka6_offload;
 
 	struct {
-		uint32_t rr_count;
-		uint32_t rr_buf_len;
-		uint32_t idx_offset;
-		uint32_t rr__offset;
-	} mdns;
+		u32 timeout;
+		u16 local_port;
+		u16 remote_port;
+		u8 remote_mac_addr[6];
+		u16 rsvd;
+		u32 rsvd2;
+		u32 rsvd3;
+		u16 rsvd4;
+		u16 win_size;
+		u32 seq_num;
+		u32 ack_num;
+		u32 local_ip[4];
+		u32 remote_ip[4];
+	} ka6_connection[16];
+
+	struct {
+		u32 rr_count;
+		u32 rr_buf_len;
+		u32 idx_offset;
+		u32 rr__offset;
+	} mdns_offload;
 };
 
 struct ptp_s {
-	uint32_t enable:1;
+	u32 enable:1;
 };
 
 struct pause_quanta_s {
-	uint16_t quanta_10M;
-	uint16_t threshold_10M;
-	uint16_t quanta_100M;
-	uint16_t threshold_100M;
-	uint16_t quanta_1G;
-	uint16_t threshold_1G;
-	uint16_t quanta_2P5G;
-	uint16_t threshold_2P5G;
-	uint16_t quanta_5G;
-	uint16_t threshold_5G;
-	uint16_t quanta_10G;
-	uint16_t threshold_10G;
+	u16 quanta_10M;
+	u16 threshold_10M;
+	u16 quanta_100M;
+	u16 threshold_100M;
+	u16 quanta_1G;
+	u16 threshold_1G;
+	u16 quanta_2P5G;
+	u16 threshold_2P5G;
+	u16 quanta_5G;
+	u16 threshold_5G;
+	u16 quanta_10G;
+	u16 threshold_10G;
 };
 
-struct memory_mailbox_control_s {
-	uint32_t operation :1;
-	uint32_t start :1;
-	uint32_t target :1;
-	uint32_t rsvd:29;
-	uint32_t address;
-	uint32_t memory_data;
+struct data_buffer_status_s {
+	u32 data_offset;
+	u32 data_length;
 };
 
-struct  version_s {
+struct device_caps_s {
+	u8 finite_flashless:1;
+	u8 cable_diag:1;
+	u8 ncsi:1;
+	u8 avb:1;
+	u8 rsvd:4;
+
+	u8 rsvd2;
+	u16 rsvd3;
+	u32 rsvd4;
+};
+
+struct version_s {
 	struct bundle_version_t {
-		uint32_t major:8;
-		uint32_t minor:8;
-		uint32_t build:16;
+		u8 major;
+		u8 minor;
+		u16 build;
 	} bundle;
 	struct mac_version_t {
-		uint32_t major:8;
-		uint32_t minor:8;
-		uint32_t build:16;
+		u8 major;
+		u8 minor;
+		u16 build;
 	} mac;
 	struct phy_version_t {
-		uint32_t major:8;
-		uint32_t minor:8;
-		uint32_t build:16;
+		u8 major;
+		u8 minor;
+		u16 build;
 	} phy;
-	uint32_t rsvd:32;
+	u32 rsvd;
 };
 
 struct link_status_s {
-	uint32_t link_state:4;
-	uint32_t link_rate:4;
+	u8 link_state:4;
+	u8 link_rate:4;
 
-	uint32_t pause_tx:1;
-	uint32_t pause_rx:1;
-	uint32_t eee:1;
-	uint32_t duplex:1;
-	uint32_t rsvd:4;
+	u8 pause_tx:1;
+	u8 pause_rx:1;
+	u8 eee:1;
+	u8 duplex:1;
+	u8 rsvd:4;
 
-	uint32_t rsvd2:16;
+	u16 rsvd2;
 };
 
 struct wol_status_s {
-	uint32_t wake_count:8;
-	uint32_t wake_reason:8;
-	uint32_t wake_up_packet_length :12;
-	uint32_t wake_up_pattern_number :3;
-	uint32_t rsvd:1;
-	uint32_t wake_up_packet[379];
+	u8 wake_count;
+	u8 wake_reason;
+
+	u16 wake_up_packet_length :12;
+	u16 wake_up_pattern_number :3;
+	u16 rsvd:1;
+
+	u32 wake_up_packet[379];
 };
 
 struct mac_health_monitor_s {
-	uint32_t mac_ready:1;
-	uint32_t mac_fault:1;
-	uint32_t rsvd:6;
-	uint32_t mac_temperature:8;
-	uint32_t mac_heart_beat:16;
-	uint32_t mac_fault_code:16;
-	uint32_t rsvd2:16;
+	u8 mac_ready:1;
+	u8 mac_fault:1;
+	u8 mac_flashless_finished:1;
+	u8 rsvd:5;
+
+	u8 mac_temperature;
+	u16 mac_heart_beat;
+	u16 mac_fault_code;
+	u16 rsvd2;
 };
 
 struct phy_health_monitor_s {
-	uint32_t phy_ready:1;
-	uint32_t phy_fault:1;
-	uint32_t phy_hot_warning:1;
-	uint32_t rsvd:5;
-	uint32_t phy_temperature:8;
-	uint32_t phy_heart_beat:16;
-	uint32_t phy_fault_code:16;
-	uint32_t rsvd2:16;
+	u8 phy_ready:1;
+	u8 phy_fault:1;
+	u8 phy_hot_warning:1;
+	u8 rsvd:5;
+
+	u8 phy_temperature;
+	u16 phy_heart_beat;
+	u16 phy_fault_code;
+	u16 rsvd2;
 };
 
 struct device_link_caps_s {
-	uint32_t rsvd:4;
-	uint32_t internal_loopback:1;
-	uint32_t external_loopback:1;
-	uint32_t rsvd2:2;
+	u8 rsvd:3;
+	u8 internal_loopback:1;
+	u8 external_loopback:1;
+	u8 rate_10M_hd:1;
+	u8 rate_100M_hd:1;
+	u8 rate_1G_hd:1;
 
-	uint32_t rate_10M:1;
-	uint32_t rate_100M:1;
-	uint32_t rate_1G:1;
-	uint32_t rate_2P5G:1;
-	uint32_t rate_N2P5G:1;
-	uint32_t rate_5G:1;
-	uint32_t rate__N5G:1;
-	uint32_t rate_10G:1;
+	u8 rate_10M:1;
+	u8 rate_100M:1;
+	u8 rate_1G:1;
+	u8 rate_2P5G:1;
+	u8 rate_N2P5G:1;
+	u8 rate_5G:1;
+	u8 rate_N5G:1;
+	u8 rate_10G:1;
 
-	uint32_t rsvd3:1;
-	uint32_t eee_100M:1;
-	uint32_t eee_1G:1;
-	uint32_t eee_2P5G:1;
-	uint32_t rsvd4:1;
-	uint32_t eee_5G:1;
-	uint32_t rsvd5:1;
-	uint32_t eee_10G:1;
+	u8 rsvd3:1;
+	u8 eee_100M:1;
+	u8 eee_1G:1;
+	u8 eee_2P5G:1;
+	u8 rsvd4:1;
+	u8 eee_5G:1;
+	u8 rsvd5:1;
+	u8 eee_10G:1;
 
-	uint32_t pause_rx:1;
-	uint32_t pause_tx:1;
-	uint32_t pfc:1;
-	uint32_t downshift:1;
-	uint32_t downshift_retry:4;
+	u8 pause_rx:1;
+	u8 pause_tx:1;
+	u8 pfc:1;
+	u8 downshift:1;
+	u8 downshift_retry:4;
 };
 
 struct sleep_proxy_caps_s {
-	uint32_t ipv4_offload:1;
-	uint32_t ipv6_offload:1;
-	uint32_t tcp_port_offload:1;
-	uint32_t udp_port_offload:1;
-	uint32_t ka4_offload:1;
-	uint32_t ka6_offload:1;
-	uint32_t mdns_offload:1;
-	uint32_t wake_on_ping:1;
+	u8 ipv4_offload:1;
+	u8 ipv6_offload:1;
+	u8 tcp_port_offload:1;
+	u8 udp_port_offload:1;
+	u8 ka4_offload:1;
+	u8 ka6_offload:1;
+	u8 mdns_offload:1;
+	u8 wake_on_ping:1;
 
-	uint32_t wake_on_magic_packet:1;
-	uint32_t wake_on_pattern:1;
-	uint32_t wake_on_timer:1;
-	uint32_t wake_on_link:1;
-	uint32_t wake_patterns_count:4;
+	u8 wake_on_magic_packet:1;
+	u8 wake_on_pattern:1;
+	u8 wake_on_timer:1;
+	u8 wake_on_link:1;
+	u8 wake_patterns_count:4;
 
-	uint32_t ipv4_count:8;
-	uint32_t ipv6_count:8;
+	u8 ipv4_count;
+	u8 ipv6_count;
 
-	uint32_t tcp_port_offload_count:8;
-	uint32_t udp_port_offload_count:8;
+	u8 tcp_port_offload_count;
+	u8 udp_port_offload_count;
 
-	uint32_t tcp4_ka_count:8;
-	uint32_t tcp6_ka_count:8;
+	u8 tcp4_ka_count;
+	u8 tcp6_ka_count;
 
-	uint32_t igmp_offload:1;
-	uint32_t mld_offload:1;
-	uint32_t rsvd:30;
+	u8 igmp_offload:1;
+	u8 mld_offload:1;
+	u8 rsvd:6;
+
+	u8 rsvd2;
+	u16 rsvd3;
 };
 
 struct lkp_link_caps_s {
-	uint32_t rsvd:8;
+	u8 rsvd:5;
+	u8 rate_10M_hd:1;
+	u8 rate_100M_hd:1;
+	u8 rate_1G_hd:1;
 
-	uint32_t rate_10M:1;
-	uint32_t rate_100M:1;
-	uint32_t rate_1G:1;
-	uint32_t rate_2P5G:1;
-	uint32_t rate_N2P5G:1;
-	uint32_t rate_5G:1;
-	uint32_t rate_N5G:1;
-	uint32_t rate_10G:1;
+	u8 rate_10M:1;
+	u8 rate_100M:1;
+	u8 rate_1G:1;
+	u8 rate_2P5G:1;
+	u8 rate_N2P5G:1;
+	u8 rate_5G:1;
+	u8 rate_N5G:1;
+	u8 rate_10G:1;
 
-	uint32_t rsvd2:1;
-	uint32_t eee_100M:1;
-	uint32_t eee_1G:1;
-	uint32_t eee_2P5G:1;
-	uint32_t rsvd3:1;
-	uint32_t eee_5G:1;
-	uint32_t rsvd4:1;
-	uint32_t eee_10G:1;
+	u8 rsvd2:1;
+	u8 eee_100M:1;
+	u8 eee_1G:1;
+	u8 eee_2P5G:1;
+	u8 rsvd3:1;
+	u8 eee_5G:1;
+	u8 rsvd4:1;
+	u8 eee_10G:1;
 
-	uint32_t pause_rx:1;
-	uint32_t pause_tx:1;
-	uint32_t rsvd5:6;
+	u8 pause_rx:1;
+	u8 pause_tx:1;
+	u8 rsvd5:6;
 };
 
 struct core_dump_s {
-	uint32_t reg0;
-	uint32_t reg1;
-	uint32_t reg2;
+	u32 reg0;
+	u32 reg1;
+	u32 reg2;
 
-	uint32_t hi;
-	uint32_t lo;
+	u32 hi;
+	u32 lo;
 
-	uint32_t regs[32];
+	u32 regs[32];
 };
 
 struct trace_s {
-	uint32_t sync_counter;
-	uint32_t mem_buffer[0xff];
+	u32 sync_counter;
+	u32 mem_buffer[0x1ff];
 };
 
 struct cable_diag_control_s {
-	uint32_t toggle :1;
-	uint32_t rsvd:31;
+	u8 toggle :1;
+	u8 rsvd:7;
+
+	u8 wait_timeout_sec;
+	u16 rsvd2;
 };
 
 struct cable_diag_lane_data_s {
-	uint32_t result_code :8;
-	uint32_t dist :8;
-	uint32_t far_dist :8;
-	uint32_t rsvd:8;
+	u8 result_code;
+	u8 dist;
+	u8 far_dist;
+	u8 rsvd;
 };
 
 struct cable_diag_status_s {
 	struct cable_diag_lane_data_s lane_data[4];
-	uint32_t state :1;
-	uint32_t rsvd:31;
+	u8 transact_id;
+	u8 status:4;
+	u8 rsvd:4;
+	u16 rsvd2;
 };
 
 struct phy_fw_load_status_s {
-	uint32_t phy_fw_load_from_host :1;
-	uint32_t phy_fw_load_from_flash :1;
-	uint32_t phy_fw_load_from_d_c :1;
-	uint32_t phy_load_from_flash_failed :1;
-	uint32_t phy_load_from_host_failed :1;
-	uint32_t phy_load_from_d_c_failed :1;
-	uint32_t phy_hash_validation_failed :1;
-	uint32_t phy_fw_started :1;
+	u8 phy_fw_load_from_host :1;
+	u8 phy_fw_load_from_flash :1;
+	u8 phy_fw_load_from_d_c :1;
+	u8 phy_load_from_flash_failed :1;
+	u8 phy_load_from_host_failed :1;
+	u8 phy_load_from_d_c_failed :1;
+	u8 phy_hash_validation_failed :1;
+	u8 phy_fw_started :1;
 
-	uint32_t phy_stall_timeout :1;
-	uint32_t phy_unstall_timeout :1;
-	uint32_t phy_fw_start_timeout :1;
-	uint32_t phy_iram_load_error :1;
-	uint32_t phy_dram_load_error :1;
-	uint32_t phy_mcp_run_failed :1;
-	uint32_t phy_mcp_stall_failed :1;
-	uint32_t phy_mcp_unstall_failed :1;
+	u8 phy_stall_timeout :1;
+	u8 phy_unstall_timeout :1;
+	u8 phy_fw_start_timeout :1;
+	u8 phy_iram_load_error :1;
+	u8 phy_dram_load_error :1;
+	u8 phy_mcp_run_failed :1;
+	u8 phy_mcp_stall_failed :1;
+	u8 phy_mcp_unstall_failed :1;
 
-	uint32_t phy_wait_for_semaphore :1;
-	uint32_t phy_semaphore_locked :1;
-	uint32_t rsvd :2;
-	uint32_t phy_worst_block_upload_retry_number:4;
+	u8 phy_wait_for_semaphore :1;
+	u8 phy_semaphore_locked :1;
+	u8 rsvd :2;
+	u8 phy_worst_block_upload_retry_number:4;
 
-	uint32_t phy_worst_upload_block_number :6;
-	uint32_t rsvd2:2;
+	u8 phy_worst_upload_block_number :6;
+	u8 rsvd2:2;
 };
 
 struct statistics_s {
 	struct {
-		uint32_t link_up;
-		uint32_t link_down;
+		u32 link_up;
+		u32 link_down;
 	} link;
 
 	struct {
-		uint64_t tx_unicast_octets;
-		uint64_t tx_multicast_octets;
-		uint64_t tx_broadcast_octets;
-		uint64_t rx_unicast_octets;
-		uint64_t rx_multicast_octets;
-		uint64_t rx_broadcast_octets;
+		u64 tx_unicast_octets;
+		u64 tx_multicast_octets;
+		u64 tx_broadcast_octets;
+		u64 rx_unicast_octets;
+		u64 rx_multicast_octets;
+		u64 rx_broadcast_octets;
 
-		uint32_t tx_unicast_frames;
-		uint32_t tx_multicast_frames;
-		uint32_t tx_broadcast_frames;
-		uint32_t tx_errors;
+		u32 tx_unicast_frames;
+		u32 tx_multicast_frames;
+		u32 tx_broadcast_frames;
+		u32 tx_errors;
 
-		uint32_t rx_unicast_frames;
-		uint32_t rx_multicast_frames;
-		uint32_t rx_broadcast_frames;
-		uint32_t rx_dropped_frames;
+		u32 rx_unicast_frames;
+		u32 rx_multicast_frames;
+		u32 rx_broadcast_frames;
+		u32 rx_dropped_frames;
+		u32 rx_error_frames;
 
-		uint32_t tx_good_frames;
-		uint32_t rx_good_frames;
+		u32 tx_good_frames;
+		u32 rx_good_frames;
+		u32 reserve_fw_gap;
 	} msm;
+	u32 main_loop_cycles;
+	u32 reserve_fw_gap;
 };
 
-struct memory_mailbox_status_s {
-	uint32_t result_code:1;
-	uint32_t rsvd:31;
-	uint32_t memory_data;
+struct filter_caps_s {
+	u8 l2_filters_base_index:6;
+	u8 flexible_filter_mask:2;
+	u8 l2_filter_count;
+	u8 ethertype_filter_base_index;
+	u8 ethertype_filter_count;
+
+	u8 vlan_filter_base_index;
+	u8 vlan_filter_count;
+	u8 l3_ip4_filter_base_index:4;
+	u8 l3_ip4_filter_count:4;
+	u8 l3_ip6_filter_base_index:4;
+	u8 l3_ip6_filter_count:4;
+
+	u8 l4_filter_base_index:4;
+	u8 l4_filter_count:4;
+	u8 l4_flex_filter_base_index:4;
+	u8 l4_flex_filter_count:4;
+	u8 rslv_tbl_base_index;
+	u8 rslv_tbl_count;
+};
+
+struct request_policy_s {
+	struct {
+		u8 all:1;
+		u8 mcast:1;
+		u8 rx_queue_tc_index:5;
+		u8 queue_or_tc:1;
+	} promisc;
+
+	struct {
+		u8 accept:1;
+		u8 rsvd:1;
+		u8 rx_queue_tc_index:5;
+		u8 queue_or_tc:1;
+	} bcast;
+
+	struct {
+		u8 accept:1;
+		u8 rsvd:1;
+		u8 rx_queue_tc_index:5;
+		u8 queue_or_tc:1;
+	} mcast;
+
+	u8 rsvd:8;
 };
 
 struct fw_interface_in {
-	uint32_t mtu;
-	uint32_t rsvd1:32;
-	struct mac_address_s mac_address;
+	u32 mtu;
+	u32 rsvd1;
+	struct mac_address_aligned_s mac_address;
 	struct link_control_s link_control;
-	uint32_t rsvd2:32;
+	u32 rsvd2;
 	struct link_options_s link_options;
-	uint32_t rsvd3:32;
+	u32 rsvd3;
 	struct thermal_shutdown_s thermal_shutdown;
-	uint32_t rsvd4:32;
+	u32 rsvd4;
 	struct sleep_proxy_s sleep_proxy;
-	uint32_t rsvd5:32;
+	u32 rsvd5;
 	struct pause_quanta_s pause_quanta[8];
 	struct cable_diag_control_s cable_diag_control;
-	uint32_t rsvd6:32;
-	struct memory_mailbox_control_s mem_box_control;
+	u32 rsvd6;
+	struct data_buffer_status_s data_buffer_status;
+	u32 rsvd7;
+	struct request_policy_s request_policy;
 };
 
 struct transaction_counter_s {
-	uint32_t transaction_cnt_a:16;
-	uint32_t transaction_cnt_b:16;
+	u16 transaction_cnt_a;
+	u16 transaction_cnt_b;
+};
+
+struct management_status_s {
+	struct mac_address_s mac_address;
+	u16 vlan;
+
+	struct{
+		u32 enable : 1;
+		u32 rsvd:31;
+	} flags;
+
+	u32 rsvd1;
+	u32 rsvd2;
+	u32 rsvd3;
+	u32 rsvd4;
+	u32 rsvd5;
 };
 
 struct fw_interface_out {
-	struct transaction_counter_s transactoin_id;
+	struct transaction_counter_s transaction_id;
 	struct version_s version;
 	struct link_status_s link_status;
 	struct wol_status_s wol_status;
-	uint32_t rsvd:32;
-	uint32_t rsvd2:32;
+	u32 rsvd;
+	u32 rsvd2;
 	struct mac_health_monitor_s mac_health_monitor;
-	uint32_t rsvd3:32;
-	uint32_t rsvd4:32;
+	u32 rsvd3;
+	u32 rsvd4;
 	struct phy_health_monitor_s phy_health_monitor;
-	uint32_t rsvd5:32;
-	uint32_t rsvd6:32;
+	u32 rsvd5;
+	u32 rsvd6;
 	struct cable_diag_status_s cable_diag_status;
-	uint32_t rsvd7:32;
+	u32 rsvd7;
 	struct device_link_caps_s device_link_caps;
-	uint32_t rsvd8:32;
+	u32 rsvd8;
 	struct sleep_proxy_caps_s sleep_proxy_caps;
-	uint32_t rsvd9:32;
+	u32 rsvd9;
 	struct lkp_link_caps_s lkp_link_caps;
-	uint32_t rsvd10:32;
+	u32 rsvd10;
 	struct core_dump_s core_dump;
-	uint32_t rsvd11:32;
-	struct memory_mailbox_status_s mem_box_status;
-	uint32_t rsvd12:32;
-	struct phy_fw_load_status_s phy_fw_load_status;
-	uint32_t rsvd13:32;
-	uint32_t rsvd14:32;
+	u32 rsvd11;
 	struct statistics_s stats;
-	uint32_t reserve[290];
+	u32 rsvd12;
+	struct filter_caps_s filter_caps;
+	struct device_caps_s device_caps;
+	u32 rsvd13;
+	struct management_status_s management_status;
+	u32 reserve[21];
 	struct trace_s trace;
 };
-
-
-#define HAL_ATLANTIC2_UTILS_CHIP_MIPS         0x00000001U
-#define HAL_ATLANTIC2_UTILS_CHIP_MPI_AQ       0x00000010U
-#define HAL_ATLANTIC2_UTILS_CHIP_REVISION_F   0x00000100U
-
-
-#define IS_CHIP_A2_FEATURE(_F_) (HAL_ATLANTIC2_UTILS_CHIP_##_F_ & \
-	self->chip_features)
-
 
 #define  AQ_A2_FW_LINK_RATE_INVALID 0
 #define  AQ_A2_FW_LINK_RATE_10M     1
@@ -597,49 +660,6 @@ struct fw_interface_out {
 #define  AQ_HOST_MODE_LOW_POWER    3U
 #define  AQ_HOST_MODE_SHUTDOWN     4U
 
-#define AQ_A2_FW_CABLE_STATUS_OPEN_CIRCUIT  7
-#define AQ_A2_FW_CABLE_STATUS_HIGH_MISMATCH 6
-#define AQ_A2_FW_CABLE_STATUS_LOW_MISMATCH  5
-#define AQ_A2_FW_CABLE_STATUS_SHORT_CIRCUIT 4
-#define AQ_A2_FW_CABLE_STATUS_PAIR_D        3
-#define AQ_A2_FW_CABLE_STATUS_PAIR_C        2
-#define AQ_A2_FW_CABLE_STATUS_PAIR_B        1
-#define AQ_A2_FW_CABLE_STATUS_OK            0
-
-enum {
-	AQ_MEMORY_MAILBOX_STATUS_FAIL = 0,
-	AQ_MEMORY_MAILBOX_STATUS_SUCCESS = 1
-};
-
-enum {
-	AQ_MEMORY_MAILBOX_TARGET_MEMORY = 0,
-	AQ_MEMORY_MAILBOX_TARGET_MDIO = 1
-};
-
-enum {
-	AQ_MEMORY_MAILBOX_OPERATION_READ = 0,
-	AQ_MEMORY_MAILBOX_OPERATION_WRITE = 1
-};
-
-enum AQ_WAKE_REASON {
-	AQ_WAKE_REASON_UNKNOWN,
-	AQ_WAKE_REASON_PANIC,
-	AQ_WAKE_REASON_LINK,
-	AQ_WAKE_REASON_TIMER,
-	AQ_WAKE_REASON_RESERVED,
-	AQ_WAKE_REASON_NAME_GUARD,
-	AQ_WAKE_REASON_ADDR_GUARD,
-	AQ_WAKE_REASON_TCPKA,
-
-	AQ_WAKE_REASON_DATA_FLAG,
-
-	AQ_WAKE_REASON_PING,
-	AQ_WAKE_REASON_SYN,
-	AQ_WAKE_REASON_UDP,
-	AQ_WAKE_REASON_PATTERN,
-	AQ_WAKE_REASON_MAGIC_PACKET
-};
-
 int hw_atl2_utils_initfw(struct aq_hw_s *self, const struct aq_fw_ops **fw_ops);
 
 int hw_atl2_utils_soft_reset(struct aq_hw_s *self);
@@ -649,6 +669,11 @@ int hw_atl2_utils_hw_get_regs(struct aq_hw_s *self,
 			      u32 *regs_buff);
 
 u32 hw_atl2_utils_get_fw_version(struct aq_hw_s *self);
+
+int hw_atl2_utils_get_filter_caps(struct aq_hw_s *self);
+
+int hw_atl2_utils_set_filter_policy(struct aq_hw_s *self, bool promisc,
+				    bool allmulti);
 
 extern const struct aq_fw_ops aq_a2_fw_ops;
 

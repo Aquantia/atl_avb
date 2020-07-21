@@ -169,8 +169,8 @@ struct atl_rx_ring_ctrl {
 #define BIT(n) (1 << (n))
 #endif
 #define RING_CTRL_ENABLE_BIT 31
-#define RING_CTRL_RESET_BIT 25
 #define RING_CTRL_HEAD_WB_BIT 28
+#define RING_CTRL_RESET_BIT 25
 
 #define A2_TX_RING_EG_TS_WB_EN 18
 #define A2_TX_RING_AVB_NO_LT 17

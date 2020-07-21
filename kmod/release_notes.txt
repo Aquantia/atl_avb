@@ -1,9 +1,83 @@
-Release/tag: v3.3.1
-Date: 10/02/2019
+Release/tag: v2.4.3
+Date: 06/03/2020
 ================================
-* ATLDRV-xxx     Add TSN support, create a lib for AVB/TSN support
-* ATLDRV-xxy     Add AQC-113 support
+* ATLDRV-1374	Driver crashes during link up after Wake by MP from S3 (suspend)
+* ATLDRV-1373	Unexpected message displayed after WOL options enabling
+* ATLDRV-1365	Segmentation fault while rmmod atlantic on Antigua 7x7
+* ATLDRV-1361	A1: IPv6 ntuple filters do not work on CentOS7.7-64
+* ATLDRV-1360	A2: Ntuple filters for udp6/tcp4/tcp6/sctp6 (src_port, dst_port) do not work
+* ATLDRV-1344	ethtool doesn't show statistics for all queues in case of multiple TCs
+* ATLDRV-1337	qos: mqprio: implement mqprio rate limiters
+* ATLDRV-1324	Implement cable diag on Antigua
 
+
+Release/tag: v2.4.2
+Date: 18/02/2020
+================================
+* ATLDRV-1346	WOL: Linux driver crashes when restoring from the Hibernate
+* ATLDRV-1345	dmesg warnings after enabling TC if number of vectors is non-standard
+* ATLDRV-1341	QoS: Spread RX traffic through TCs
+* ATLDRV-1338	static checker error: passing untrusted data to 'test_bit()'
+* ATLDRV-1330	Linux: update reset sequence
+* ATLDRV-1328	A1: Ntuple ipv4(dst)/+L4, ipv6(src, dst)/+L4 filters not work
+* ATLDRV-1323	Linux: add early packet break param
+* ATLDRV-1320	WOL does not work on Antigua
+* ATLDRV-1307	Build failure on build-upstream (ioremap_nocache has been removed)
+* ATLDRV-1306	Setup hith antigua card and linux drv does not go to hibernate
+* ATLDRV-1242	Linux macsec backport from FWD
+* ATLDRV-227	QoS
+
+Release/tag: v2.4.1
+Date: 31/01/2020
+================================
+* ATLDRV-1291	Add half/full duplex support in driver interface
+* ATLDRV-1282	Fix build-4.19-32bit
+* ATLDRV-1272	net: aquantia: KASAN: use-after-free in aq_nic_xmit
+* ATLDRV-1266	Lenovo/Foxconn P520/P920 system hang when resume from S4
+* ATLDRV-754	RX flow filter: IPv6 addresses does not works
+
+Release/tag: v2.4.0
+Date: 10/01/2020
+================================
+* ATLDRV-1244 A2: merged A2 into A1
+* ATLDRV-1254 A2: performance: pcie ext tags hook: module param `aq_enable_wa=8`
+
+Release/tag: v2.3.3
+Date: 09/01/2020
+================================
+* ATLDRV-1271 upstream 5.5 backsync
+* ATLDRV-1270 Add support for 4.x FW to Atlantic linux driver
+* ATLDRV-1269 QCOMM: gpio drift
+* ATLDRV-1137 AMD cstom driver that doesn't reset MIPS
+
+
+Release/tag: v2.3.2
+Date: 29/11/2019
+================================
+* ATLDRV-1178    Linux: udp gso and tcp lso were not functional on IPv6
+* ATLDRV-1167    RX traffic stops at all with Windows LKP with MTU 16k
+* ATLDRV-1179    Linux: backport ptp and misc from upstream
+
+Release/tag: v2.3.1.3-a2
+Date: 03/01/2020
+================================
+
+* ATLDRV-1265 Multiply TX Packet Scheduler Data registers by 16 to keep A1 values
+* ATLDRV-1241 A2: new VID/DID
+* A2: Corect FW version display
+* A2: use speed as an input for itr moderation
+* ATLDRV-1254 Code styling/checkpatch
+
+Release/tag: v2.3.1
+Date: 16/10/2019
+================================
+* ATLDRV-1151    DMANetworkLoopback is not working
+* ATLDRV-1131    Linux: 32bit build support
+* ATLDRV-1130    Linux PTP: Invalid pDelay calculation with 2.3.0.0 linux driver
+* ATLDRV-1115    "ifconfig down" does not change link state
+* ATLDRV-1048    Cable Diagnostics
+
+Release/tag: v2.3.0
 Date: 06/09/2019
 ================================
 * ATLDRV-1096    Can't build driver on some custom kernels

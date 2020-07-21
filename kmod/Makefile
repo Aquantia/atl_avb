@@ -1,26 +1,12 @@
-################################################################################
+# SPDX-License-Identifier: GPL-2.0-only
+# Atlantic Network Driver
 #
-# aQuantia Ethernet Controller AQtion Linux Driver
-# Copyright(c) 2014-2019 aQuantia Corporation.
+# Copyright (C) 2014-2019 aQuantia Corporation
+# Copyright (C) 2019-2020 Marvell International Ltd.
 #
-# This program is free software; you can redistribute it and/or modify it
-# under the terms and conditions of the GNU General Public License,
-# version 2, as published by the Free Software Foundation.
-#
-# This program is distributed in the hope it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-# more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program. If not, see <http://www.gnu.org/licenses/>.
-#
-# The full GNU General Public License is included in this distribution in
-# the file called "COPYING".
-#
-# Contact Information: <rdc-drv@aquantia.com>
-# aQuantia Corporation, 91 E. Tasman Dr. Suite 100, San Jose, CA 95134, USA
-#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
 ################################################################################
 
 #
@@ -38,14 +24,16 @@ export DEBIAN=`/usr/bin/dpkg --search /usr/bin/dpkg >/dev/null 2>&1 && echo 1 ||
 
 export KO_EXISTS=`cat /etc/modules 2>/dev/null | grep atlantic && echo 1 || echo 0`
 
-CFALGS_GCC=-Wall -DTSN_SUPPORT -DAQ_ATL2_BRINGUP=1 -DPCI_DEBUG -DPTM_SUPPORT -ggdb -DCONFIG_CRC_ITU_T
+CFLAGS_EXT:=-DPCI_DEBUG -DPTM_SUPPORT -DTSN_SUPPORT
+CFLAGS_GCC+=-Wall -ggdb $(CFLAGS_EXT)
+# -DCONFIG_CRC_ITU_T
 
 ifeq "$(CC)" "gcc"
-	ccflags-y := $(CFALGS_GCC)
+	ccflags-y := $(CFLAGS_GCC)
 endif
 
 ifeq "$(CC)" "cc"
-	ccflags-y := $(CFALGS_GCC)
+	ccflags-y := $(CFLAGS_GCC)
 endif
 
 ifeq "$(CC)" "clang-3.5"
@@ -54,20 +42,30 @@ ifeq "$(CC)" "clang-3.5"
 	enum,integer-divide-by-zero,shift,unreachable,unsigned-integer-overflow
 endif
 
-CFLAGS_aq_trace.o:=-I$(src)
+ccflags-y:=$(CFLAGS_EXT) -I$(src)
 
 ifneq ($(KERNELRELEASE),)
 	$(TARGET)-objs:=aq_main.o aq_nic.o aq_pci_func.o aq_nic.o aq_vec.o aq_ring.o aq_ptp.o aq_filters.o \
-	aq_hw_utils.o aq_ethtool.o aq_drvinfo.o hw_atl/hw_atl_a0.o hw_atl/hw_atl_b0.o hw_atl/hw_atl_utils.o\
-	hw_atl/hw_atl_utils_fw2x.o aq_trace.o aq_phy.o\
+	aq_hw_utils.o aq_ethtool.o aq_drvinfo.o \
+	aq_trace.o \
+	aq_phy.o \
+	aq_compat.o \
+	aq_tsn.o \
+	aq_sysfs.o \
+	hw_atl/hw_atl_a0.o \
+	hw_atl/hw_atl_b0.o \
+	hw_atl/hw_atl_utils.o \
+	hw_atl/hw_atl_utils_fw2x.o \
 	hw_atl/hw_atl_llh.o \
 	hw_atl/hw_atl_fw_hostboot.o \
 	hw_atl/hw_atl_fw_image.o \
-	aq_compat.o \
-	hw_atl2/hw_atl2.o hw_atl2/hw_atl2_utils.o\
+	hw_atl2/hw_atl2_llh.o \
+	hw_atl2/hw_atl2.o \
+	hw_atl2/hw_atl2_utils.o \
 	hw_atl2/hw_atl2_utils_fw.o \
-	hw_atl2/hw_atl2_llh.o\
-	aq_tsn.o aq_sysfs.o\
+	macsec/macsec_api.o \
+
+	$(TARGET)-$(CONFIG_MACSEC) += aq_macsec.o
 
 	obj-m:=$(TARGET).o
 else
@@ -79,8 +77,9 @@ else
 
 	PWD:=$(shell pwd)
 
+
 all:
-	$(MAKE) -j4 CC=$(CC) -C $(BUILD_DIR) M=$(PWD) modules
+	$(MAKE) -j4 -C $(BUILD_DIR) M=$(PWD) modules
 
 dox:	.doxygen
 	@doxygen $<
@@ -95,6 +94,7 @@ load:
 	-rmmod atlantic
 	modprobe ptp
 	modprobe crc_itu_t
+	modprobe -q macsec || true
 	insmod ./$(TARGET).ko
 
 unload:

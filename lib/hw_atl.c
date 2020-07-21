@@ -55,6 +55,7 @@
 #include "atl_private.h"
 
 #include "atl_llh.h"
+#include "../kmod/aq_tsn.h"
 
 #define ATL_AVBTS_RING        24
 
@@ -717,7 +718,7 @@ const struct aq_avb_hw_ops hw_atl_avb_ops_b0 = {
 #define ATL_TSG_CLOCK_SEL_0 0U
 #define ATL_TSG_CLOCK_SEL_1 1U
 
-static u32 clk_sel = ATL_TSG_CLOCK_SEL_1;
+static u32 clk_sel = ATL_TSG_CLOCK_SEL_0;
 static u64 last_ts = (u64)-1;
 
 static u32 hw_atl_a2_get_tc_assigned_to_q(struct tx_ring *aq_ring)
@@ -740,7 +741,7 @@ static int hw_atl2_avb_ring_tx_init(struct tx_ring *aq_ring, u32 flags)
 	ring_size = ATL_AVB_RING_SIZE + (flags & TX_RING_FLAG_HEAD_WB ? 1 : 0);
     error = create_tx_ring(aq_ring, ring_size, (int)aq_ring->index);
 	if( !error ) {
-		aq_ring->ctrl->prefetch = 125000; //TODO
+		aq_ring->ctrl->prefetch = aq_ring->adapter->link_speed > ATL_LINK_100M ? 125000 : 250000;
 		aq_ring->ctrl->ctrl_len |= BIT(A2_TX_RING_AVB_EN);
 		aq_ring->ctrl->ctrl_len |= BIT(A2_TX_RING_AVB_NO_LT);
 		aq_ring->flags |= flags & TX_RING_FLAG_WRITEBACK_EOP;
@@ -757,7 +758,7 @@ static int hw_atl2_avb_ring_tx_init(struct tx_ring *aq_ring, u32 flags)
 	rr(aq_ring->adapter, HW_ATL2_TPB_AVB_SCHDL_EN_ADR, &reg);
 	reg |= 1 << ring_tc;
 	wr(aq_ring->adapter, HW_ATL2_TPB_AVB_SCHDL_EN_ADR, reg);
-	printf("Enable AVB for ring %d: %x", aq_ring->index, reg);
+	logprint(LOG_LVL_DEBUG2, "Enable AVB for ring %d: %x\n", aq_ring->index, reg);
 	return error;
 }
 
@@ -821,12 +822,12 @@ static int hw_atl_a2_avb_ring_tx_reset(struct tx_ring *aq_ring)
 	rr(aq_ring->adapter, HW_ATL2_TPB_AVB_SCHDL_EN_ADR, &reg);
 	reg &= ~(1 << ring_tc);
 	wr(aq_ring->adapter, HW_ATL2_TPB_AVB_SCHDL_EN_ADR, reg);
-	//printf("Disable AVB for ring %d r: %x", aq_ring->index, reg);
+	logprint(LOG_LVL_DEBUG2, "Disable AVB for ring %d r: %x", aq_ring->index, reg);
 	res = hw_atl_b0_avb_ring_tx_reset(aq_ring);
 
 	reg |= 1 << ring_tc;
 	wr(aq_ring->adapter, HW_ATL2_TPB_AVB_SCHDL_EN_ADR, reg);
-	printf("Reset AVB for ring %d r: %x", aq_ring->index, reg);
+	logprint(LOG_LVL_DEBUG2, "Reset AVB for ring %d r: %x", aq_ring->index, reg);
 
 	return res;
 }
@@ -844,7 +845,7 @@ static int hw_atl_a2_avb_ring_tx_disable(struct tx_ring *aq_ring)
 	rr(aq_ring->adapter, HW_ATL2_TPB_AVB_SCHDL_EN_ADR, &reg);
 	reg &= ~(1 << ring_tc);
 	wr(aq_ring->adapter, HW_ATL2_TPB_AVB_SCHDL_EN_ADR, reg);
-	printf("Disable AVB for ring %d: %x", aq_ring->index, reg);
+	logprint(LOG_LVL_DEBUG2, "Disable AVB for ring %d: %x\n", aq_ring->index, reg);
 
 	return hw_atl_b0_avb_ring_tx_disable(aq_ring);
 }

@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+/* Atlantic Network Driver
+ *
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /* File aq_nic.h: Declaration of common code for NIC. */
@@ -17,13 +18,14 @@
 #include <linux/workqueue.h>
 
 struct aq_ring_s;
+struct aq_ring_stats_rx_s;
+struct aq_ring_stats_tx_s;
 struct aq_hw_ops;
 struct aq_fw_s;
 struct aq_vec_s;
+struct aq_macsec_cfg;
 struct aq_ptp_s;
-#ifdef TSN_SUPPORT
 struct aq_tsn_s;
-#endif
 enum aq_rx_filter_type;
 
 enum aq_fc_mode {
@@ -60,13 +62,19 @@ struct aq_nic_cfg_s {
 	bool is_vlan_force_promisc;
 	u16 is_mc_list_enabled;
 	u16 mc_list_count;
-	u8 special_uc_tag[32];
 	bool is_autoneg;
 	bool is_polling;
 	bool is_rss;
 	bool is_lro;
+	bool is_qos;
+	bool is_ptp;
+	enum aq_tc_mode tc_mode;
 	u32 priv_flags;
 	u8  tcs;
+	u8 prio_tc_map[8];
+	u32 tc_max_rate[AQ_CFG_TCS_MAX];
+	unsigned long tc_min_rate_msk;
+	u32 tc_min_rate[AQ_CFG_TCS_MAX];
 	struct aq_rss_parameters aq_rss;
 	u32 eee_speeds;
 	u8 force_host_boot;
@@ -92,8 +100,16 @@ struct aq_nic_cfg_s {
 #define AQ_NIC_WOL_MODES        (WAKE_MAGIC |\
 				 WAKE_PHY)
 
-#define AQ_NIC_TCVEC2RING(_NIC_, _TC_, _VEC_) \
-	((_TC_) * AQ_CFG_TCS_MAX + (_VEC_))
+#define AQ_NIC_CFG_RING_PER_TC(_NIC_CFG_) \
+	(((_NIC_CFG_)->tc_mode == AQ_TC_MODE_4TCS) ? 8 : 4)
+
+#define AQ_NIC_CFG_TCVEC2RING(_NIC_CFG_, _TC_, _VEC_) \
+	((_TC_) * AQ_NIC_CFG_RING_PER_TC(_NIC_CFG_) + (_VEC_))
+
+#define AQ_NIC_RING2QMAP(_NIC_, _ID_) \
+	((_ID_) / AQ_NIC_CFG_RING_PER_TC(&(_NIC_)->aq_nic_cfg) * \
+		(_NIC_)->aq_vecs + \
+	((_ID_) % AQ_NIC_CFG_RING_PER_TC(&(_NIC_)->aq_nic_cfg)))
 
 #define AQ_NIC_MAX	32
 
@@ -121,7 +137,7 @@ struct aq_nic_s {
 	atomic_t flags;
 	u32 msg_enable;
 	struct aq_vec_s *aq_vec[AQ_CFG_VECS_MAX];
-	struct aq_ring_s *aq_ring_tx[AQ_CFG_VECS_MAX * AQ_CFG_TCS_MAX];
+	struct aq_ring_s *aq_ring_tx[AQ_HW_QUEUES_MAX];
 	struct aq_hw_s *aq_hw;
 	struct net_device *ndev;
 	unsigned int aq_vecs;
@@ -150,8 +166,12 @@ struct aq_nic_s {
 	struct msix_entry msix_entry[AQ_CFG_PCI_FUNC_MSIX_IRQS];
 #endif
 	struct mutex fwreq_mutex;
+#if IS_ENABLED(CONFIG_MACSEC)
+	struct aq_macsec_cfg *macsec_cfg;
+#endif
 	/* PTP support */
 	struct aq_ptp_s *aq_ptp;
+
 #ifdef TSN_SUPPORT
 	// TSN support
 	struct aq_tsn_s *aq_tsn;
@@ -166,7 +186,13 @@ static inline struct device *aq_nic_get_dev(struct aq_nic_s *self)
 }
 
 extern unsigned int aq_rx_refill_thres;
-extern unsigned int aq_new_filters_enabled;
+
+#define AQ_WA_RDM_CACHE_CLEAR	BIT(0)
+#define AQ_WA_MRRS_LIMIT	BIT(1)
+#define AQ_WA_DMA_REQ_LIMIT	BIT(2)
+#define AQ_WA_FORCE_PCIE_EXTTAG	BIT(3)
+#define AQ_WA_EARLY_PKT_BRK	BIT(4)
+extern int aq_enable_wa;
 
 void aq_nic_ndev_init(struct aq_nic_s *self);
 struct aq_nic_s *aq_nic_alloc_hot(struct net_device *ndev);
@@ -178,22 +204,27 @@ void aq_nic_cfg_start(struct aq_nic_s *self);
 int aq_nic_ndev_register(struct aq_nic_s *self);
 void aq_nic_ndev_free(struct aq_nic_s *self);
 int aq_nic_start(struct aq_nic_s *self);
+unsigned int aq_nic_map_skb(struct aq_nic_s *self, struct sk_buff *skb,
+			    struct aq_ring_s *ring);
 int aq_nic_xmit(struct aq_nic_s *self, struct sk_buff *skb);
 int aq_nic_get_regs(struct aq_nic_s *self, struct ethtool_regs *regs, void *p);
 int aq_nic_get_regs_count(struct aq_nic_s *self);
-void aq_nic_get_stats(struct aq_nic_s *self, u64 *data);
+u64 *aq_nic_get_stats(struct aq_nic_s *self, u64 *data);
+int aq_nic_fill_stats_data(struct aq_ring_stats_rx_s *stats_rx,
+			  struct aq_ring_stats_tx_s *stats_tx,
+			  u64 *data,
+			  unsigned int *p_count);
 int aq_nic_stop(struct aq_nic_s *self);
 void aq_nic_deinit(struct aq_nic_s *self, bool link_down);
 void aq_nic_set_power(struct aq_nic_s *self);
 void aq_nic_free_hot_resources(struct aq_nic_s *self);
 void aq_nic_free_vectors(struct aq_nic_s *self);
+int aq_nic_realloc_vectors(struct aq_nic_s *self);
 int aq_nic_set_mtu(struct aq_nic_s *self, int new_mtu);
 int aq_nic_set_mac(struct aq_nic_s *self, struct net_device *ndev);
 int aq_nic_set_packet_filter(struct aq_nic_s *self, unsigned int flags);
 int aq_nic_set_multicast_list(struct aq_nic_s *self, struct net_device *ndev);
 unsigned int aq_nic_get_link_speed(struct aq_nic_s *self);
-unsigned int aq_nic_map_skb(struct aq_nic_s *self, struct sk_buff *skb,
-		struct aq_ring_s *ring);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 6, 0)
 void aq_nic_get_link_ksettings(struct aq_nic_s *self,
@@ -213,8 +244,13 @@ int aq_nic_update_interrupt_moderation_settings(struct aq_nic_s *self);
 void aq_nic_shutdown(struct aq_nic_s *self);
 void aq_nic_parse_parameters(struct aq_nic_s *self, unsigned int nic_id);
 void aq_nic_request_firmware(struct aq_nic_s *self);
-#ifdef TSN_SUPPORT
+u8 aq_nic_reserve_filter(struct aq_nic_s *self, enum aq_rx_filter_type type);
+void aq_nic_release_filter(struct aq_nic_s *self, enum aq_rx_filter_type type,
+			   u32 location);
+int aq_nic_setup_tc_mqprio(struct aq_nic_s *self, u32 tcs, u8 *prio_tc_map);
+int aq_nic_setup_tc_max_rate(struct aq_nic_s *self, const unsigned int tc,
+			     const u32 max_rate);
+int aq_nic_setup_tc_min_rate(struct aq_nic_s *self, const unsigned int tc,
+			     const u32 min_rate);
 void aq_tsn_apply_link_speed(struct aq_nic_s *aq_nic, unsigned int mbps);
-#endif
-
 #endif /* AQ_NIC_H */

@@ -1,4 +1,4 @@
-Linux* aQuantia AQtion TSN Driver for the aQuantia Multi-Gigabit PCI Express Family of
+Linux* aQuantia AQtion Driver for the aQuantia Multi-Gigabit PCI Express Family of
 Ethernet Adapters
 =============================================================================
 
@@ -11,7 +11,6 @@ Contents
 - Building and Installation
 - Command Line Parameters
 - Additional Configurations
-- TSN specific
 - Support
 
 IMPORTANT NOTE
@@ -205,102 +204,7 @@ In general, the following could be used to prepare kernel source tree for build:
 	make prepare
 	make modules_prepare
 
-Command Line Parameters
-=======================
-The following command line parameters are available on atlantic driver:
-
-aq_itr -Interrupt throttling mode
-----------------------------------------
-Accepted values: 0, 1, 0xFFFF
-Default value: 0xFFFF
-0      - Disable interrupt throttling.
-1      - Enable interrupt throttling and use specified tx and rx rates.
-0xFFFF - Auto throttling mode. Driver will choose the best RX and TX
-         interrupt throtting settings based on link speed.
-
-aq_itr_tx - TX interrupt throttle rate
-----------------------------------------
-Accepted values: 0 - 0x1FF
-Default value: 0
-TX side throttling in microseconds. Adapter will setup maximum interrupt delay
-to this value. Minimum interrupt delay will be a half of this value
-
-aq_itr_rx - RX interrupt throttle rate
-----------------------------------------
-Accepted values: 0 - 0x1FF
-Default value: 0
-RX side throttling in microseconds. Adapter will setup maximum interrupt delay
-to this value. Minimum interrupt delay will be a half of this value
-
-Note: ITR settings could be changed in runtime by ethtool -c means (see below)
-
-aq_rxpageorder
-----------------------------------------
-Default value: 0
-RX page order override. Thats a power of 2 number of RX pages allocated for
-each descriptor. Received descriptor size is still limited by AQ_CFG_RX_FRAME_MAX.
-Increasing pageorder makes page reuse better (actual on iommu enabled systems).
-
-aq_rx_refill_thres
-----------------------------------------
-Default value: 32
-RX refill threshold. RX path will not refill freed descriptors until the
-specified number of free descriptors is observed. Larger values may help
-better page reuse but may lead to packet drops as well.
-
-
-Config file parametes
-=======================
-Some parameters can be changed in the {source_dir}/aq_cfg.h file:
-
-AQ_CFG_VECS_DEF
-------------------------------------------------------------
-Number of queues
-Valid Range: 0 - 8 (up to AQ_CFG_VECS_MAX)
-Default value: 4
-
-AQ_CFG_IS_RSS_DEF
-------------------------------------------------------------
-Enable/disable Receive Side Scaling
-
-This feature allows the adapter to distribute receive processing
-across multiple CPU-cores and to prevent from overloading a single CPU core.
-
-Valid values
-0 - disabled
-1 - enabled
-
-Default value: 1
-
-AQ_CFG_NUM_RSS_QUEUES_DEF
-------------------------------------------------------------
-Number of queues for Receive Side Scaling
-Valid Range: 0 - 4 (up to AQ_CFG_VECS_DEF)
-
-Default value: 4
-
-AQ_CFG_IS_LRO_DEF
-------------------------------------------------------------
-Enable/disable Large Receive Offload
-
-This offload enables the adapter to coalesce multiple TCP segments and indicate
-them as a single coalesced unit to the OS networking subsystem.
-The system consumes less energy but it also introduces more latency in packets processing.
-
-Valid values
-0 - disabled
-1 - enabled
-
-Default value: 1
-
-AQ_CFG_TX_CLEAN_BUDGET
-----------------------------------------
-Maximum descriptors to cleanup on TX at once.
-Default value: 256
-
-After the aq_cfg.h file changed the driver must be rebuilt to take effect.
-
-Additional Configurations
+Configuration
 =========================
   Viewing Link Messages
   ---------------------
@@ -316,57 +220,64 @@ Additional Configurations
   ------------
   The driver supports Jumbo Frames for all adapters. Jumbo Frames support is
   enabled by changing the MTU to a value larger than the default of 1500.
-  The maximum value for the MTU is 16000.  Use the ifconfig command to
+  The maximum value for the MTU is 16000.  Use the `ip` command to
   increase the MTU size.  For example:
 
-        ifconfig <ethX> mtu 9000 up
+        ip link set mtu 16000 dev enp1s0
 
   ethtool
   -------
   The driver utilizes the ethtool interface for driver configuration and
-  diagnostics, as well as displaying statistical information. The latest 
+  diagnostics, as well as displaying statistical information. The latest
   ethtool version is required for this functionality.
- 
-  
+
   NAPI
   ----
-  NAPI (Rx polling mode) is supported in the atlantic driver. 
-
-  See ftp://robur.slu.se/pub/Linux/net-development/NAPI/usenix-paper.tgz for 
-  more information on NAPI.
+  NAPI (Rx polling mode) is supported in the atlantic driver.
 
 Supported ethtool options
 ============================
  Viewing adapter settings
  ---------------------
  ethtool <ethX>
- 
+
  Output example:
- Settings for enp1s0:
-        Supported ports: [ ]
-        Supported link modes:   100baseT/Full
-                                1000baseT/Full
-                                10000baseT/Full
-        Supported pause frame use: Symmetric Receive-only
-        Supports auto-negotiation: Yes
-        Advertised link modes:  100baseT/Full
-                                1000baseT/Full
-                                10000baseT/Full
-        Advertised pause frame use: Symmetric
-        Advertised auto-negotiation: Yes
-        Speed: 10000Mb/s
-        Duplex: Full
-        Port: FIBRE
-        PHYAD: 0
-        Transceiver: external
-        Auto-negotiation: on
-        Link detected: yes
+
+  Settings for enp1s0:
+    Supported ports: [ TP ]
+    Supported link modes:   100baseT/Full
+                            1000baseT/Full
+                            10000baseT/Full
+                            2500baseT/Full
+                            5000baseT/Full
+    Supported pause frame use: Symmetric
+    Supports auto-negotiation: Yes
+    Supported FEC modes: Not reported
+    Advertised link modes:  100baseT/Full
+                            1000baseT/Full
+                            10000baseT/Full
+                            2500baseT/Full
+                            5000baseT/Full
+    Advertised pause frame use: Symmetric
+    Advertised auto-negotiation: Yes
+    Advertised FEC modes: Not reported
+    Speed: 10000Mb/s
+    Duplex: Full
+    Port: Twisted Pair
+    PHYAD: 0
+    Transceiver: internal
+    Auto-negotiation: on
+    MDI-X: Unknown
+    Supports Wake-on: g
+    Wake-on: d
+    Link detected: yes
 
  ---
  Note: AQrate speeds (2.5/5 Gb/s) will be displayed only with linux kernels > 4.10.
     But you can still use these speeds:
-    `ethtool -s eth0 autoneg off speed 2500`
-Note: AQC FW provides only information on actual negotiated pause frame usage.
+	ethtool -s eth0 autoneg off speed 2500
+
+ Note: AQC FW provides only information on actual negotiated pause frame usage.
     Link partner pause settings are not directly available.
     Thus, `Advertised pause frame use` actually shows negotiated settings.
     To check on real advertised settings, `ethtool -a eth0` could be used.
@@ -377,8 +288,8 @@ Note: AQC FW provides only information on actual negotiated pause frame usage.
 
  Output example:
  driver: atlantic
- version: 1.6.9.0
- firmware-version: 1.5.49
+ version: 2.3.1
+ firmware-version: 3.1.78
  expansion-rom-version:
  bus-info: 0000:01:00.0
  supports-statistics: yes
@@ -454,24 +365,24 @@ Note: AQC FW provides only information on actual negotiated pause frame usage.
  Interrupt coalescing support
  ---------------------------------
  ITR mode, TX/RX coalescing timings could be viewed with:
- 
+
  ethtool -c <ethX>
- 
+
  and changed with:
- 
+
  ethtool -C <ethX> tx-usecs <usecs> rx-usecs <usecs>
- 
+
  To disable coalescing:
 
  ethtool -C <ethX> tx-usecs 0 rx-usecs 0 tx-max-frames 1 tx-max-frames 1
- 
+
  Wake on LAN support
  ---------------------------------
 
  WOL support by magic packet:
 
  ethtool -s <ethX> wol g
- 
+
  To disable WOL:
 
  ethtool -s <ethX> wol d
@@ -694,12 +605,113 @@ SNR required to operate at a BER of 10e-12. It is reported with 0.1 dB of
 resolution to an accuracy of 0.5 dB within the range of -12.7 dB to 12.7 dB.
 The number is in offset binary, with 0.0 dB represented by 0x8000.
 
-TSN specific
-=======
+Command Line Parameters
+=======================
+The following command line parameters are available on atlantic driver:
 
-AVB/TSN implementation are done in user mode library. Driver uses special IOCTL
-commands to provide an access to device registers and a possibility of 
-DMA memory allocation/releasing.
+aq_itr -Interrupt throttling mode
+----------------------------------------
+Accepted values: 0, 1, 0xFFFF
+Default value: 0xFFFF
+0      - Disable interrupt throttling.
+1      - Enable interrupt throttling and use specified tx and rx rates.
+0xFFFF - Auto throttling mode. Driver will choose the best RX and TX
+         interrupt throtting settings based on link speed.
+
+aq_itr_tx - TX interrupt throttle rate
+----------------------------------------
+Accepted values: 0 - 0x1FF
+Default value: 0
+TX side throttling in microseconds. Adapter will setup maximum interrupt delay
+to this value. Minimum interrupt delay will be a half of this value
+
+aq_itr_rx - RX interrupt throttle rate
+----------------------------------------
+Accepted values: 0 - 0x1FF
+Default value: 0
+RX side throttling in microseconds. Adapter will setup maximum interrupt delay
+to this value. Minimum interrupt delay will be a half of this value
+
+Note: ITR settings could be changed in runtime by ethtool -c means (see below)
+
+aq_rxpageorder
+----------------------------------------
+Default value: 0
+RX page order override. Thats a power of 2 number of RX pages allocated for
+each descriptor. Received descriptor size is still limited by AQ_CFG_RX_FRAME_MAX.
+Increasing pageorder makes page reuse better (actual on iommu enabled systems).
+
+aq_rx_refill_thres
+----------------------------------------
+Default value: 32
+RX refill threshold. RX path will not refill freed descriptors until the
+specified number of free descriptors is observed. Larger values may help
+better page reuse but may lead to packet drops as well.
+
+
+Config file parameters
+=======================
+Some parameters can be changed in the {source_dir}/aq_cfg.h file:
+
+AQ_CFG_VECS_DEF
+------------------------------------------------------------
+Number of queues
+Valid Range: 0 - 8 (up to AQ_CFG_VECS_MAX)
+Default value: 8
+Notice this value will be capped by the number of cores available on the system.
+
+AQ_CFG_IS_RSS_DEF
+------------------------------------------------------------
+Enable/disable Receive Side Scaling
+
+This feature allows the adapter to distribute receive processing
+across multiple CPU-cores and to prevent from overloading a single CPU core.
+
+Valid values
+0 - disabled
+1 - enabled
+
+Default value: 1
+
+AQ_CFG_NUM_RSS_QUEUES_DEF
+------------------------------------------------------------
+Number of queues for Receive Side Scaling
+Valid Range: 0 - 8 (up to AQ_CFG_VECS_DEF)
+
+Default value: AQ_CFG_VECS_DEF
+
+AQ_CFG_IS_LRO_DEF
+------------------------------------------------------------
+Enable/disable Large Receive Offload
+
+This offload enables the adapter to coalesce multiple TCP segments and indicate
+them as a single coalesced unit to the OS networking subsystem.
+The system consumes less energy but it also introduces more latency in packets processing.
+
+Valid values
+0 - disabled
+1 - enabled
+
+Default value: 1
+
+AQ_CFG_TX_CLEAN_BUDGET
+----------------------------------------
+Maximum descriptors to cleanup on TX at once.
+Default value: 256
+
+AQ_CFG_UDP_RSS_DISABLE
+------------------------------------------------------------
+Disable RSS for UDP traffic
+
+Turning on workaround of HW bug by routing all UDP pakets through queue 0.
+
+Valid values
+0 - disabled
+1 - enabled
+
+Default value: 0
+
+After the aq_cfg.h file changed the driver must be rebuilt to take effect.
 
 Support
 =======
@@ -711,8 +723,9 @@ to the issue to support@aquantia.com
 License
 =======
 
-aQuantia Corporation Network Driver
-Copyright(c) 2014 - 2018 aQuantia Corporation.
+Atlantic Network Driver
+Copyright (C) 2014-2019 aQuantia Corporation
+Copyright (C) 2019-2020 Marvell International Ltd.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms and conditions of the GNU General Public License,

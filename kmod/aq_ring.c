@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+/* Atlantic Network Driver
+ *
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /* File aq_ring.c: Definition of functions for Rx/Tx rings. */
@@ -9,7 +10,6 @@
 #include "aq_ring.h"
 #include "aq_nic.h"
 #include "aq_hw.h"
-#include "aq_ptp.h"
 #include "aq_hw_utils.h"
 #include "aq_ptp.h"
 #include "aq_trace.h"
@@ -32,8 +32,8 @@ static int aq_get_rxpage(struct aq_rxpage *rxpage, unsigned int order,
 			 struct device *dev)
 {
 	struct page *page;
-	dma_addr_t daddr;
 	int ret = -ENOMEM;
+	dma_addr_t daddr;
 
 	page = dev_alloc_pages(order);
 	if (unlikely(!page))
@@ -62,7 +62,7 @@ err_exit:
 static int aq_get_rxpages(struct aq_ring_s *self, struct aq_ring_buff_s *rxbuf,
 			  int order)
 {
-	int ret = 0;
+	int ret;
 
 	if (rxbuf->rxdata.page) {
 		/* One means ring is the only user and can reuse */
@@ -91,9 +91,10 @@ static int aq_get_rxpages(struct aq_ring_s *self, struct aq_ring_buff_s *rxbuf,
 				    aq_nic_get_dev(self->aq_nic));
 		if (ret)
 			self->stats.rx.alloc_fails++;
+		return ret;
 	}
 
-	return ret;
+	return 0;
 }
 
 static struct aq_ring_s *aq_ring_alloc(struct aq_ring_s *self,
@@ -121,6 +122,7 @@ err_exit:
 		aq_ring_free(self);
 		self = NULL;
 	}
+
 	return self;
 }
 
@@ -147,6 +149,7 @@ err_exit:
 		aq_ring_free(self);
 		self = NULL;
 	}
+
 	return self;
 }
 
@@ -178,6 +181,7 @@ err_exit:
 		aq_ring_free(self);
 		self = NULL;
 	}
+
 	return self;
 }
 
@@ -186,7 +190,6 @@ aq_ring_hwts_rx_alloc(struct aq_ring_s *self, struct aq_nic_s *aq_nic,
 		      unsigned int idx, unsigned int size, unsigned int dx_size)
 {
 	struct device *dev = aq_nic_get_dev(aq_nic);
-	int err = 0;
 	size_t sz = size * dx_size + AQ_CFG_RXDS_DEF;
 
 	memset(self, 0, sizeof(*self));
@@ -199,12 +202,6 @@ aq_ring_hwts_rx_alloc(struct aq_ring_s *self, struct aq_nic_s *aq_nic,
 	self->dx_ring = dma_alloc_coherent(dev, sz, &self->dx_ring_pa,
 					   GFP_KERNEL);
 	if (!self->dx_ring) {
-		err = -ENOMEM;
-		goto err_exit;
-	}
-
-err_exit:
-	if (err < 0) {
 		aq_ring_free(self);
 		return NULL;
 	}
@@ -217,6 +214,7 @@ int aq_ring_init(struct aq_ring_s *self)
 	self->hw_head = 0;
 	self->sw_head = 0;
 	self->sw_tail = 0;
+
 	return 0;
 }
 
@@ -238,8 +236,11 @@ void aq_ring_queue_wake(struct aq_ring_s *ring)
 {
 	struct net_device *ndev = aq_nic_get_ndev(ring->aq_nic);
 
-	if (__netif_subqueue_stopped(ndev, ring->idx)) {
-		netif_wake_subqueue(ndev, ring->idx);
+	if (__netif_subqueue_stopped(ndev,
+				     AQ_NIC_RING2QMAP(ring->aq_nic,
+						      ring->idx))) {
+		netif_wake_subqueue(ndev,
+				    AQ_NIC_RING2QMAP(ring->aq_nic, ring->idx));
 		ring->stats.tx.queue_restarts++;
 	}
 }
@@ -248,8 +249,11 @@ void aq_ring_queue_stop(struct aq_ring_s *ring)
 {
 	struct net_device *ndev = aq_nic_get_ndev(ring->aq_nic);
 
-	if (!__netif_subqueue_stopped(ndev, ring->idx))
-		netif_stop_subqueue(ndev, ring->idx);
+	if (!__netif_subqueue_stopped(ndev,
+				      AQ_NIC_RING2QMAP(ring->aq_nic,
+						       ring->idx)))
+		netif_stop_subqueue(ndev,
+				    AQ_NIC_RING2QMAP(ring->aq_nic, ring->idx));
 }
 
 bool aq_ring_tx_clean(struct aq_ring_s *self)
@@ -279,15 +283,22 @@ bool aq_ring_tx_clean(struct aq_ring_s *self)
 		}
 
 		if (unlikely(buff->is_eop)) {
-			if (unlikely(buff->request_ts) && self->aq_nic->aq_hw_ops->hw_ring_tx_ptp_get_ts ){
-				u64 ts;
-				if( !(ts = self->aq_nic->aq_hw_ops->hw_ring_tx_ptp_get_ts(self)) )
-					break; // Wait timestamp. TODO break by timeout
+			if (unlikely(buff->request_ts) &&
+			    self->aq_nic->aq_hw_ops->hw_ring_tx_ptp_get_ts) {
+				u64 ts = self->aq_nic->aq_hw_ops->hw_ring_tx_ptp_get_ts(self);
+
+ 				/* Wait timestamp. TODO break by timeout */
+				if (!ts)
+					break;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)) ||\
     (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 2))
 				aq_ptp_tx_hwtstamp(self->aq_nic, ts);
 #endif
 			}
+
+			++self->stats.tx.packets;
+			self->stats.tx.bytes += buff->skb->len;
+
 			dev_kfree_skb_any(buff->skb);
 		}
 		buff->pa = 0U;
@@ -326,8 +337,10 @@ static void aq_rx_checksum(struct aq_ring_s *self,
 }
 
 #define AQ_SKB_ALIGN SKB_DATA_ALIGN(sizeof(struct skb_shared_info))
-int aq_ring_rx_clean(struct aq_ring_s *self, struct napi_struct *napi,
-		     int *work_done, int budget)
+int aq_ring_rx_clean(struct aq_ring_s *self,
+		     struct napi_struct *napi,
+		     int *work_done,
+		     int budget)
 {
 	struct net_device *ndev = aq_nic_get_ndev(self->aq_nic);
 	bool is_rsc_completed = true;
@@ -359,9 +372,8 @@ int aq_ring_rx_clean(struct aq_ring_s *self, struct napi_struct *napi,
 							    next_,
 							    self->hw_head);
 
-				if (unlikely(!is_rsc_completed)) {
+				if (unlikely(!is_rsc_completed))
 					break;
-				}
 
 				buff->is_error |= buff_->is_error;
 				buff->is_cso_err |= buff_->is_cso_err;
@@ -372,7 +384,8 @@ int aq_ring_rx_clean(struct aq_ring_s *self, struct napi_struct *napi,
 				err = 0;
 				goto err_exit;
 			}
-			if (buff->is_error || buff->is_cso_err) {
+			if (buff->is_error ||
+			    (buff->is_lro && buff->is_cso_err)) {
 				buff_ = buff;
 				do {
 					next_ = buff_->next,
@@ -489,7 +502,10 @@ int aq_ring_rx_clean(struct aq_ring_s *self, struct napi_struct *napi,
 		skb->rxhash = buff->rss_hash;
 #endif
 		/* Send all PTP traffic to 0 queue */
-		skb_record_rx_queue(skb, is_ptp_ring ? 0 : self->idx);
+		skb_record_rx_queue(skb,
+				    is_ptp_ring ? 0
+						: AQ_NIC_RING2QMAP(self->aq_nic,
+								   self->idx));
 
 		++self->stats.rx.packets;
 		self->stats.rx.bytes += skb->len;
@@ -504,12 +520,12 @@ err_exit:
 
 void aq_ring_hwts_rx_clean(struct aq_ring_s *self, struct aq_nic_s *aq_nic)
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)) ||\
-    (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(7, 2))
+#if IS_REACHABLE(CONFIG_PTP_1588_CLOCK)
 	while (self->sw_head != self->hw_head) {
 		u64 ns;
 
-		self->aq_nic->aq_hw_ops->extract_hwts(self->dx_ring +
+		aq_nic->aq_hw_ops->extract_hwts(aq_nic->aq_hw,
+						self->dx_ring +
 						(self->sw_head * self->dx_size),
 						self->dx_size, &ns);
 		aq_ptp_tx_hwtstamp(aq_nic, ns);

@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+/* Atlantic Network Driver
+ *
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /* File aq_cfg.h: Definition of configuration parameters and constants. */
@@ -42,6 +43,9 @@
 /* LRO */
 #define AQ_CFG_IS_LRO_DEF           1U
 
+/* PTP */
+#define AQ_CFG_PTP_DEF              1U
+
 /* RSS */
 #define AQ_CFG_RSS_INDIRECTION_TABLE_MAX  64U
 #define AQ_CFG_RSS_HASHKEY_SIZE           40U
@@ -50,7 +54,7 @@
 #define AQ_CFG_NUM_RSS_QUEUES_DEF   AQ_CFG_VECS_DEF
 #define AQ_CFG_RSS_BASE_CPU_NUM_DEF 0U
 
-#define AQ_CFG_PCI_FUNC_MSIX_IRQS   9U
+#define AQ_CFG_PCI_FUNC_MSIX_IRQS   11U
 #define AQ_CFG_PCI_FUNC_PORTS       2U
 
 #define AQ_CFG_SERVICE_TIMER_INTERVAL    (1 * HZ)
@@ -88,18 +92,16 @@
  */
 #define AQ_CFG_UDP_RSS_DISABLE	0
 
-#define AQ_CFG_NEW_FILTERS_DEF  1U
+/* Reset datapath only instead of full global reset
+ */
+#ifndef AQ_CFG_NO_MCP_RESET
+#define AQ_CFG_NO_MCP_RESET 0
+#endif
 
 #define AQ_CFG_LOCK_TRYS   100U
 
-#define AQ_CFG_PTP_8TC_RING_IDX             8
-#define AQ_CFG_PTP_4TC_RING_IDX            16
-#define AQ_CFG_PTP_HWST_RING_IDX           31
-
-#define MAX_PTP_GPIO_COUNT 4
-
-#define AQ_CFG_DRV_AUTHOR      "aQuantia"
-#define AQ_CFG_DRV_DESC        "aQuantia Corporation(R) Network Driver"
+#define AQ_CFG_DRV_AUTHOR      "Marvell"
+#define AQ_CFG_DRV_DESC        "Marvell (Aquantia) Corporation(R) Network Driver"
 #define AQ_CFG_DRV_NAME        "atl_tsn"
 #define AQ_CFG_DRV_VERSION	__stringify(NIC_MAJOR_DRIVER_VERSION)"."\
 				__stringify(NIC_MINOR_DRIVER_VERSION)"."\

@@ -1,10 +1,6 @@
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* Atlantic Network Driver
+ * Copyright (C) 2020 Marvell International Ltd.
  */
 
 /* File hw_atl2_.h: Declaration of abstract interface for Atlantic hardware
@@ -14,7 +10,7 @@
 #ifndef HW_ATL2_H
 #define HW_ATL2_H
 
-#include "../aq_common.h"
+#include "aq_common.h"
 
 #define HW_ATL2_RX_TS_SIZE 8
 

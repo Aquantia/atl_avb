@@ -1,12 +1,9 @@
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+// SPDX-License-Identifier: GPL-2.0-only
+/* Atlantic Network Driver
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
+ * Copyright (C) 2018-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
-
 #include "aq_nic.h"
 #include "aq_sysfs.h"
 
@@ -78,13 +75,6 @@ static void aq_release_bars(struct aq_tsn_s *self)
 			continue;
 		kobject_del(&bar->kobj);
 		kobject_put(&bar->kobj);
-
-		if( pci_resource_flags(self->aq_nic->pdev, i) & IORESOURCE_MEM ) {
-			struct resource *res;
-			res = self->aq_nic->pdev->resource[i].child;
-			res->flags = self->orig_flags[i];
-			//printk("Restore resource %d child flag: %x\n", i, (uint32_t)res->flags);
-		}
 	}
 
 	kobject_del(self->sysfs_bars);
@@ -104,11 +94,7 @@ static int aq_create_bars(struct aq_tsn_s *self)
 		goto err;
 
 	for (i = 0; mask && i < PCI_ROM_RESOURCE; mask >>= 1, i++){
-		const char *pref;
-		if( !(pci_resource_flags(self->aq_nic->pdev, i) & IORESOURCE_MEM) )
-			continue;
-		
-		pref = pci_resource_flags(self->aq_nic->pdev, i) & IORESOURCE_MEM ? "mem" : "io";
+		const char *pref = pci_resource_flags(self->aq_nic->pdev, i) & IORESOURCE_MEM ? "mem" : "io";
 
 		if (!(mask & 1))
 			continue;
@@ -255,11 +241,18 @@ static int memreg_mmap(struct file *file, struct kobject *kobj, struct bin_attri
 #ifdef pgprot_dmacoherent
 	vma->vm_page_pgprot = prot_dmacoherent(vma->vm_page_prot);
 #else //!defined(pgprot_dmacoherent)
+#if 0
+    if(dma_mmap_coherent(&memreg->dev->pdev->dev, vma, memreg->vaddr, memreg->paddr, memreg->real_size))
+    {
+        dev_err(&memreg->dev->pdev->dev, "DMA remap failed. Vaddr: %p, Paddr: %p", memreg->vaddr, memreg->paddr);
+        return -ENXIO;
+    }
+	return 0;
+#else
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	//vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
+#endif
 #endif //defined(pgprot_dmacoherent)
 #endif
-
 	if (remap_pfn_range(vma, vma->vm_start, memreg->paddr >> PAGE_SHIFT,
 			    vma->vm_end - vma->vm_start, vma->vm_page_prot))
 		return -EAGAIN;
@@ -298,8 +291,6 @@ void aq_hide_memreg(struct aq_memreg *memreg)
 {
 	sysfs_remove_bin_file(&memreg->kobj, &memreg->mmap_attr);
 	kobject_del(&memreg->kobj);
-	//printk("aq_hide_memreg 1 aq_tsn 0x%llx\n", (u64)memreg->aq_tsn);
 	kobject_put(&memreg->kobj);
-	//printk("aq_hide_memreg 2 aq_tsn 0x%llx\n", (u64)memreg->aq_tsn); //WHY???
 }
 

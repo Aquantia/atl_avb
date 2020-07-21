@@ -1,10 +1,8 @@
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* Atlantic Network Driver
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /* File hw_atl_b0_internal.h: Definition of Atlantic B0 chip specific
@@ -28,11 +26,11 @@
 
 #define HW_ATL_B0_MAC      0U
 #define HW_ATL_B0_MAC_MIN  1U
+/* 33, because of an agreement to split L2 filters between us and FW */
 #define HW_ATL_B0_MAC_MAX  33U
-
-/* UCAST/MCAST filters */
-#define HW_ATL_B0_UCAST_FILTERS_MAX 38
-#define HW_ATL_B0_MCAST_FILTERS_MAX 8
+#define HW_ATL_B0_VLAN_MAX_FILTERS 16U
+#define HW_ATL_B0_ETYPE_MAX_FILTERS 16U
+#define HW_ATL_B0_L3L4_MAX_FILTERS 8U
 
 /* interrupts */
 #define HW_ATL_B0_ERR_INT 8U
@@ -68,23 +66,25 @@
 #define HW_ATL_B0_MPI_SPEED_SHIFT       16U
 
 #define HW_ATL_B0_TXBUF_MAX              160U
+/*
+ * ~2 x 32 (streams) x 8 (channels) x
+ * x 24 (192kHz sample rate) x 3 (24-bits per sample)
+ * + packet headers + packet context
+ */
+#define HW_ATL_B0_AVB_TXBUF_SIZE          40U
 #define HW_ATL_B0_PTP_TXBUF_SIZE           8U
+#define HW_ATL_B0_AVBTS_TXBUF_SIZE         8U
 
 #define HW_ATL_B0_RXBUF_MAX              320U
-#ifdef TSN_SUPPORT
-#define HW_ATL_B0_AVB_TXBUF_SIZE          40U // ~2 x 32 (streams) x 8 (channels) x 24 (192kHz sample rate) x 3 (24-bits per sample)
-#define HW_ATL_B0_AVBTS_TXBUF_SIZE         8U
 #define HW_ATL_B0_AVB_RXBUF_SIZE          80U
-#endif
 #define HW_ATL_B0_PTP_RXBUF_SIZE          16U
-#define HW_ATL_B0_PTP_HWTS_RXBUF_SIZE      8U
 
 #define HW_ATL_B0_RSS_REDIRECTION_MAX 64U
 #define HW_ATL_B0_RSS_REDIRECTION_BITS 3U
 #define HW_ATL_B0_RSS_HASHKEY_BITS 320U
 
 #define HW_ATL_B0_TCRSS_4_8  1
-#define HW_ATL_B0_TC_MAX 1U
+#define HW_ATL_B0_TC_MAX 8U
 #define HW_ATL_B0_RSS_MAX 8U
 
 #define HW_ATL_B0_LRO_RXD_MAX 16U
@@ -95,9 +95,6 @@
 
 /* (256k -1(max pay_len) - 74(header)) */
 #define HAL_ATL_B0_LSO_IPV6_MAX_SEGMENT_SIZE 262069U
-
-#define HW_ATL_B0_CHIP_REVISION_B0      0xA0U
-#define HW_ATL_B0_CHIP_REVISION_UNKNOWN 0xFFU
 
 #define HW_ATL_B0_FW_SEMA_RAM           0x2U
 
@@ -128,8 +125,8 @@
 #define HW_ATL_B0_RXD_WB_STAT_HDRLEN  (0xFFC00000)
 #define HW_ATL_B0_RXD_WB_STAT_HDRLEN_SHIFT (0x16)
 
-#define HW_ATL_B0_RXD_WB_PKTTYPE_VLAN		(1 << 5)
-#define HW_ATL_B0_RXD_WB_PKTTYPE_VLAN_DOUBLE	(1 << 6)
+#define HW_ATL_B0_RXD_WB_PKTTYPE_VLAN          BIT(5)
+#define HW_ATL_B0_RXD_WB_PKTTYPE_VLAN_DOUBLE   BIT(6)
 
 #define HW_ATL_B0_RXD_WB_STAT2_DD      (0x0001)
 #define HW_ATL_B0_RXD_WB_STAT2_EOP     (0x0002)
@@ -158,6 +155,8 @@
 #define HW_ATL_B0_MAX_RXD 8184U
 #define HW_ATL_B0_MAX_TXD 8184U
 
-/* HW layer capabilities */
+#define HW_ATL_RSS_DISABLED 0x00000000U
+#define HW_ATL_RSS_ENABLED_8TCS_2INDEX_BITS 0xA2222222U
+#define HW_ATL_RSS_ENABLED_4TCS_3INDEX_BITS 0x80003333U
 
 #endif /* HW_ATL_B0_INTERNAL_H */

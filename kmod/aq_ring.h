@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+/* Atlantic Network Driver
+ *
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /* File aq_ring.h: Declaration of functions for Rx/Tx rings. */
@@ -78,9 +79,10 @@ struct __packed aq_ring_buff_s {
 			u32 is_cleaned:1;
 			u32 is_error:1;
 			u32 is_vlan:1;
+			u32 is_lro:1;
 			u32 request_ts:1;
 			u32 clk_sel:1;
-			u32 rsvd3:3;
+			u32 rsvd3:1;
 			u16 eop_index;
 			u16 rsvd4;
 		};
@@ -179,8 +181,10 @@ void aq_ring_update_queue_state(struct aq_ring_s *ring);
 void aq_ring_queue_wake(struct aq_ring_s *ring);
 void aq_ring_queue_stop(struct aq_ring_s *ring);
 bool aq_ring_tx_clean(struct aq_ring_s *self);
-int aq_ring_rx_clean(struct aq_ring_s *self, struct napi_struct *napi,
-		int *work_done, int budget);
+int aq_ring_rx_clean(struct aq_ring_s *self,
+		     struct napi_struct *napi,
+		     int *work_done,
+		     int budget);
 int aq_ring_rx_fill(struct aq_ring_s *self);
 
 struct aq_ring_s *aq_ring_hwts_rx_alloc(struct aq_ring_s *self,

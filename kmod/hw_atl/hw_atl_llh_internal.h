@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+/* Atlantic Network Driver
+ *
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /* File hw_atl_llh_internal.h: Preprocessor definitions
@@ -10,6 +11,36 @@
 
 #ifndef HW_ATL_LLH_INTERNAL_H
 #define HW_ATL_LLH_INTERNAL_H
+
+/* COM Temperature Sense Reset Bitfield Definitions */
+#define HW_ATL_TS_RESET_ADR 0x00003100
+#define HW_ATL_TS_RESET_MSK 0x00000004
+#define HW_ATL_TS_RESET_SHIFT 2
+#define HW_ATL_TS_RESET_WIDTH 1
+
+/* COM Temperature Sense Power Down Bitfield Definitions */
+#define HW_ATL_TS_POWER_DOWN_ADR 0x00003100
+#define HW_ATL_TS_POWER_DOWN_MSK 0x00000001
+#define HW_ATL_TS_POWER_DOWN_SHIFT 0
+#define HW_ATL_TS_POWER_DOWN_WIDTH 1
+
+/* COM Temperature Sense Ready Bitfield Definitions */
+#define HW_ATL_TS_READY_ADR 0x00003120
+#define HW_ATL_TS_READY_MSK 0x80000000
+#define HW_ATL_TS_READY_SHIFT 31
+#define HW_ATL_TS_READY_WIDTH 1
+
+/*  COM Temperature Sense Ready Latch High Bitfield Definitions */
+#define HW_ATL_TS_READY_LATCH_HIGH_ADR 0x00003120
+#define HW_ATL_TS_READY_LATCH_HIGH_MSK 0x40000000
+#define HW_ATL_TS_READY_LATCH_HIGH_SHIFT 30
+#define HW_ATL_TS_READY_LATCH_HIGH_WIDTH 1
+
+/* COM Temperature Sense Data Out [B:0] Bitfield Definitions */
+#define HW_ATL_TS_DATA_OUT_ADR 0x00003120
+#define HW_ATL_TS_DATA_OUT_MSK 0x00000FFF
+#define HW_ATL_TS_DATA_OUT_SHIFT 0
+#define HW_ATL_TS_DATA_OUT_WIDTH 12
 
 /* global microprocessor semaphore  definitions
  * base address: 0x000003a0
@@ -36,9 +67,6 @@
 
 /* preprocessor definitions for msm rx errors counter register */
 #define HW_ATL_MAC_MSM_RX_ERRS_CNT_ADR 0x00000120u
-
-/* preprocessor definitions for msm tx lpi delay register */
-#define HW_ATL_MAC_MSM_TX_LPI_DELAY_ADR 0x00000078u
 
 /* preprocessor definitions for msm rx unicast frames counter register */
 #define HW_ATL_MAC_MSM_RX_UCST_FRM_CNT_ADR 0x000000e0u
@@ -574,7 +602,6 @@
 #define HW_ATL_RPB_DMA_NET_LBK_WIDTH 1
 /* default value of bitfield dma_net_loopback */
 #define HW_ATL_RPB_DMA_NET_LBK_DEFAULT 0x0
-
 
 /* rx rx_tc_mode bitfield definitions
  * preprocessor definitions for the bitfield "rx_tc_mode".
@@ -1336,245 +1363,45 @@
  * PORT="pif_rpf_l3_l4_en_i[0]"
  */
 
-/* Register address for bitfield l3_l4_en{F} */
-#define HW_ATL_RPF_L3_L4_ENF_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_l4_en{F} */
-#define HW_ATL_RPF_L3_L4_ENF_MSK 0x80000000u
-/* Inverted bitmask for bitfield l3_l4_en{F} */
-#define HW_ATL_RPF_L3_L4_ENF_MSKN 0x7FFFFFFFu
-/* Lower bit position of bitfield l3_l4_en{F} */
-#define HW_ATL_RPF_L3_L4_ENF_SHIFT 31
-/* Width of bitfield l3_l4_en{F} */
-#define HW_ATL_RPF_L3_L4_ENF_WIDTH 1
-/* Default value of bitfield l3_l4_en{F} */
-#define HW_ATL_RPF_L3_L4_ENF_DEFAULT 0x0
+#define HW_ATL_RPF_L3_REG_CTRL_ADR(filter) (0x00005380 + (filter) * 0x4)
 
-/* RX l3_v6_en{F} Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_v6_en{F}".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_v6_en_i[0]"
- */
-/* Register address for bitfield l3_v6_en{F} */
-#define HW_ATL_RPF_L3_V6_ENF_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_v6_en{F} */
-#define HW_ATL_RPF_L3_V6_ENF_MSK 0x40000000u
-/* Inverted bitmask for bitfield l3_v6_en{F} */
-#define HW_ATL_RPF_L3_V6_ENF_MSKN 0xBFFFFFFFu
-/* Lower bit position of bitfield l3_v6_en{F} */
-#define HW_ATL_RPF_L3_V6_ENF_SHIFT 30
-/* Width of bitfield l3_v6_en{F} */
-#define HW_ATL_RPF_L3_V6_ENF_WIDTH 1
-/* Default value of bitfield l3_v6_en{F} */
-#define HW_ATL_RPF_L3_V6_ENF_DEFAULT 0x0
-
-/* RX l3_sa{F}_en Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_sa{F}_en".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_sa_en_i[0]"
+/* RX rpf_l3_sa{D}[1F:0] Bitfield Definitions
+ * Preprocessor definitions for the bitfield "l3_sa{D}[1F:0]".
+ * Parameter: location {D} | stride size 0x4 | range [0, 7]
+ * PORT="pif_rpf_l3_sa0_i[31:0]"
  */
 
-/* Register address for bitfield l3_sa{F}_en */
-#define HW_ATL_RPF_L3_SAF_EN_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_sa{F}_en */
-#define HW_ATL_RPF_L3_SAF_EN_MSK 0x20000000u
-/* Inverted bitmask for bitfield l3_sa{F}_en */
-#define HW_ATL_RPF_L3_SAF_EN_MSKN 0xDFFFFFFFu
-/* Lower bit position of bitfield l3_sa{F}_en */
-#define HW_ATL_RPF_L3_SAF_EN_SHIFT 29
-/* Width of bitfield l3_sa{F}_en */
-#define HW_ATL_RPF_L3_SAF_EN_WIDTH 1
-/* Default value of bitfield l3_sa{F}_en */
-#define HW_ATL_RPF_L3_SAF_EN_DEFAULT 0x0
+/* Register address for bitfield pif_rpf_l3_sa0_i[31:0] */
+#define HW_ATL_RPF_L3_SRCA_ADR(filter) (0x000053B0 + (filter) * 0x4)
+/* Bitmask for bitfield l3_sa0[1F:0] */
+#define HW_ATL_RPF_L3_SRCA_MSK 0xFFFFFFFFu
+/* Inverted bitmask for bitfield l3_sa0[1F:0] */
+#define HW_ATL_RPF_L3_SRCA_MSKN 0xFFFFFFFFu
+/* Lower bit position of bitfield l3_sa0[1F:0] */
+#define HW_ATL_RPF_L3_SRCA_SHIFT 0
+/* Width of bitfield l3_sa0[1F:0] */
+#define HW_ATL_RPF_L3_SRCA_WIDTH 32
+/* Default value of bitfield l3_sa0[1F:0] */
+#define HW_ATL_RPF_L3_SRCA_DEFAULT 0x0
 
-/* RX l3_da{F}_en Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_da{F}_en".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_da_en_i[0]"
+/* RX rpf_l3_da{D}[1F:0] Bitfield Definitions
+ * Preprocessor definitions for the bitfield "l3_da{D}[1F:0]".
+ * Parameter: location {D} | stride size 0x4 | range [0, 7]
+ * PORT="pif_rpf_l3_da0_i[31:0]"
  */
 
-/* Register address for bitfield l3_da{F}_en */
-#define HW_ATL_RPF_L3_DAF_EN_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_da{F}_en */
-#define HW_ATL_RPF_L3_DAF_EN_MSK 0x10000000u
-/* Inverted bitmask for bitfield l3_da{F}_en */
-#define HW_ATL_RPF_L3_DAF_EN_MSKN 0xEFFFFFFFu
-/* Lower bit position of bitfield l3_da{F}_en */
-#define HW_ATL_RPF_L3_DAF_EN_SHIFT 28
-/* Width of bitfield l3_da{F}_en */
-#define HW_ATL_RPF_L3_DAF_EN_WIDTH 1
-/* Default value of bitfield l3_da{F}_en */
-#define HW_ATL_RPF_L3_DAF_EN_DEFAULT 0x0
-
-/* RX l4_sp{F}_en Bitfield Definitions
- * Preprocessor definitions for the bitfield "l4_sp{F}_en".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l4_sp_en_i[0]"
- */
-
-/* Register address for bitfield l4_sp{F}_en */
-#define HW_ATL_RPF_L4_SPF_EN_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l4_sp{F}_en */
-#define HW_ATL_RPF_L4_SPF_EN_MSK 0x08000000u
-/* Inverted bitmask for bitfield l4_sp{F}_en */
-#define HW_ATL_RPF_L4_SPF_EN_MSKN 0xF7FFFFFFu
-/* Lower bit position of bitfield l4_sp{F}_en */
-#define HW_ATL_RPF_L4_SPF_EN_SHIFT 27
-/* Width of bitfield l4_sp{F}_en */
-#define HW_ATL_RPF_L4_SPF_EN_WIDTH 1
-/* Default value of bitfield l4_sp{F}_en */
-#define HW_ATL_RPF_L4_SPF_EN_DEFAULT 0x0
-
-/* RX l4_dp{F}_en Bitfield Definitions
- * Preprocessor definitions for the bitfield "l4_dp{F}_en".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l4_dp_en_i[0]"
- */
-
-/* Register address for bitfield l4_dp{F}_en */
-#define HW_ATL_RPF_L4_DPF_EN_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l4_dp{F}_en */
-#define HW_ATL_RPF_L4_DPF_EN_MSK 0x04000000u
-/* Inverted bitmask for bitfield l4_dp{F}_en */
-#define HW_ATL_RPF_L4_DPF_EN_MSKN 0xFBFFFFFFu
-/* Lower bit position of bitfield l4_dp{F}_en */
-#define HW_ATL_RPF_L4_DPF_EN_SHIFT 26
-/* Width of bitfield l4_dp{F}_en */
-#define HW_ATL_RPF_L4_DPF_EN_WIDTH 1
-/* Default value of bitfield l4_dp{F}_en */
-#define HW_ATL_RPF_L4_DPF_EN_DEFAULT 0x0
-
-/* RX l4_prot{F}_en Bitfield Definitions
- * Preprocessor definitions for the bitfield "l4_prot{F}_en".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l4_prot_en_i[0]"
- */
-
-/* Register address for bitfield l4_prot{F}_en */
-#define HW_ATL_RPF_L4_PROTF_EN_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l4_prot{F}_en */
-#define HW_ATL_RPF_L4_PROTF_EN_MSK 0x02000000u
-/* Inverted bitmask for bitfield l4_prot{F}_en */
-#define HW_ATL_RPF_L4_PROTF_EN_MSKN 0xFDFFFFFFu
-/* Lower bit position of bitfield l4_prot{F}_en */
-#define HW_ATL_RPF_L4_PROTF_EN_SHIFT 25
-/* Width of bitfield l4_prot{F}_en */
-#define HW_ATL_RPF_L4_PROTF_EN_WIDTH 1
-/* Default value of bitfield l4_prot{F}_en */
-#define HW_ATL_RPF_L4_PROTF_EN_DEFAULT 0x0
-
-/* RX l3_arp{F}_en Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_arp{F}_en".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_arp_en_i[0]"
- */
-
-/* Register address for bitfield l3_arp{F}_en */
-#define HW_ATL_RPF_L3_ARPF_EN_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_arp{F}_en */
-#define HW_ATL_RPF_L3_ARPF_EN_MSK 0x01000000u
-/* Inverted bitmask for bitfield l3_arp{F}_en */
-#define HW_ATL_RPF_L3_ARPF_EN_MSKN 0xFEFFFFFFu
-/* Lower bit position of bitfield l3_arp{F}_en */
-#define HW_ATL_RPF_L3_ARPF_EN_SHIFT 24
-/* Width of bitfield l3_arp{F}_en */
-#define HW_ATL_RPF_L3_ARPF_EN_WIDTH 1
-/* Default value of bitfield l3_arp{F}_en */
-#define HW_ATL_RPF_L3_ARPF_EN_DEFAULT 0x0
-
-/* RX l3_l4_rxq{F}_en Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_l4_rxq{F}_en".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_l4_rxq_en_i[0]"
- */
-
-/* Register address for bitfield l3_l4_RXq{F}_en */
-#define HW_ATL_RPF_L3_L4_RXQF_EN_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_l4_RXq{F}_en */
-#define HW_ATL_RPF_L3_L4_RXQF_EN_MSK 0x00800000u
-/* Inverted bitmask for bitfield l3_l4_RXq{F}_en */
-#define HW_ATL_RPF_L3_L4_RXQF_EN_MSKN 0xFF7FFFFFu
-/* Lower bit position of bitfield l3_l4_RXq{F}_en */
-#define HW_ATL_RPF_L3_L4_RXQF_EN_SHIFT 23
-/* Width of bitfield l3_l4_RXq{F}_en */
-#define HW_ATL_RPF_L3_L4_RXQF_EN_WIDTH 1
-/* Default value of bitfield l3_l4_RXq{F}_en */
-#define HW_ATL_RPF_L3_L4_RXQF_EN_DEFAULT 0x0
-
-/* RX l3_l4_mng_RXq{F} Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_l4_mng_RXq{F}".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_l4_mng_rxq_i[0]"
- */
-
-/* Register address for bitfield l3_l4_mng_rxq{F} */
-#define HW_ATL_RPF_L3_L4_MNG_RXQF_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_l4_mng_rxq{F} */
-#define HW_ATL_RPF_L3_L4_MNG_RXQF_MSK 0x00400000u
-/* Inverted bitmask for bitfield l3_l4_mng_rxq{F} */
-#define HW_ATL_RPF_L3_L4_MNG_RXQF_MSKN 0xFFBFFFFFu
-/* Lower bit position of bitfield l3_l4_mng_rxq{F} */
-#define HW_ATL_RPF_L3_L4_MNG_RXQF_SHIFT 22
-/* Width of bitfield l3_l4_mng_rxq{F} */
-#define HW_ATL_RPF_L3_L4_MNG_RXQF_WIDTH 1
-/* Default value of bitfield l3_l4_mng_rxq{F} */
-#define HW_ATL_RPF_L3_L4_MNG_RXQF_DEFAULT 0x0
-
-/* RX l3_l4_act{F}[2:0] Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_l4_act{F}[2:0]".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_l4_act0_i[2:0]"
- */
-
-/* Register address for bitfield l3_l4_act{F}[2:0] */
-#define HW_ATL_RPF_L3_L4_ACTF_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_l4_act{F}[2:0] */
-#define HW_ATL_RPF_L3_L4_ACTF_MSK 0x00070000u
-/* Inverted bitmask for bitfield l3_l4_act{F}[2:0] */
-#define HW_ATL_RPF_L3_L4_ACTF_MSKN 0xFFF8FFFFu
-/* Lower bit position of bitfield l3_l4_act{F}[2:0] */
-#define HW_ATL_RPF_L3_L4_ACTF_SHIFT 16
-/* Width of bitfield l3_l4_act{F}[2:0] */
-#define HW_ATL_RPF_L3_L4_ACTF_WIDTH 3
-/* Default value of bitfield l3_l4_act{F}[2:0] */
-#define HW_ATL_RPF_L3_L4_ACTF_DEFAULT 0x0
-
-/* RX l3_l4_rxq{F}[4:0] Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_l4_rxq{F}[4:0]".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_l4_rxq0_i[4:0]"
- */
-
-/* Register address for bitfield l3_l4_rxq{F}[4:0] */
-#define HW_ATL_RPF_L3_L4_RXQF_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l3_l4_rxq{F}[4:0] */
-#define HW_ATL_RPF_L3_L4_RXQF_MSK 0x00001F00u
-/* Inverted bitmask for bitfield l3_l4_rxq{F}[4:0] */
-#define HW_ATL_RPF_L3_L4_RXQF_MSKN 0xFFFFE0FFu
-/* Lower bit position of bitfield l3_l4_rxq{F}[4:0] */
-#define HW_ATL_RPF_L3_L4_RXQF_SHIFT 8
-/* Width of bitfield l3_l4_rxq{F}[4:0] */
-#define HW_ATL_RPF_L3_L4_RXQF_WIDTH 5
-/* Default value of bitfield l3_l4_rxq{F}[4:0] */
-#define HW_ATL_RPF_L3_L4_RXQF_DEFAULT 0x0
-
-/* RX l4_prot{F}[2:0] Bitfield Definitions
- * Preprocessor definitions for the bitfield "l4_prot{F}[2:0]".
- * Parameter: filter {F} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l4_prot0_i[2:0]"
- */
-
-/* Register address for bitfield l4_prot{F}[2:0] */
-#define HW_ATL_RPF_L4_PROTF_ADR(filter) (0x00005380u + (filter) * 0x4)
-/* Bitmask for bitfield l4_prot{F}[2:0] */
-#define HW_ATL_RPF_L4_PROTF_MSK 0x00000007u
-/* Inverted bitmask for bitfield l4_prot{F}[2:0] */
-#define HW_ATL_RPF_L4_PROTF_MSKN 0xFFFFFFF8u
-/* Lower bit position of bitfield l4_prot{F}[2:0] */
-#define HW_ATL_RPF_L4_PROTF_SHIFT 0
-/* Width of bitfield l4_prot{F}[2:0] */
-#define HW_ATL_RPF_L4_PROTF_WIDTH 3
-/* Default value of bitfield l4_prot{F}[2:0] */
-#define HW_ATL_RPF_L4_PROTF_DEFAULT 0x0
+ /* Register address for bitfield pif_rpf_l3_da0_i[31:0] */
+#define HW_ATL_RPF_L3_DSTA_ADR(filter) (0x000053D0 + (filter) * 0x4)
+/* Bitmask for bitfield l3_da0[1F:0] */
+#define HW_ATL_RPF_L3_DSTA_MSK 0xFFFFFFFFu
+/* Inverted bitmask for bitfield l3_da0[1F:0] */
+#define HW_ATL_RPF_L3_DSTA_MSKN 0xFFFFFFFFu
+/* Lower bit position of bitfield l3_da0[1F:0] */
+#define HW_ATL_RPF_L3_DSTA_SHIFT 0
+/* Width of bitfield l3_da0[1F:0] */
+#define HW_ATL_RPF_L3_DSTA_WIDTH 32
+/* Default value of bitfield l3_da0[1F:0] */
+#define HW_ATL_RPF_L3_DSTA_DEFAULT 0x0
 
 /* RX l4_sp{D}[F:0] Bitfield Definitions
  * Preprocessor definitions for the bitfield "l4_sp{D}[F:0]".
@@ -1614,6 +1441,19 @@
 /* Default value of bitfield l4_dp{D}[F:0] */
 #define HW_ATL_RPF_L4_DPD_DEFAULT 0x0
 
+/* Register address for bitfield l3_l4_en{F} */
+#define HW_ATL_RPF_L3_L4_ENF_ADR(filter) (0x00005380u + (filter) * 0x4)
+/* Bitmask for bitfield l3_l4_en{F} */
+#define HW_ATL_RPF_L3_L4_ENF_MSK 0x80000000u
+/* Inverted bitmask for bitfield l3_l4_en{F} */
+#define HW_ATL_RPF_L3_L4_ENF_MSKN 0x7FFFFFFFu
+/* Lower bit position of bitfield l3_l4_en{F} */
+#define HW_ATL_RPF_L3_L4_ENF_SHIFT 31
+/* Width of bitfield l3_l4_en{F} */
+#define HW_ATL_RPF_L3_L4_ENF_WIDTH 1
+/* Default value of bitfield l3_l4_en{F} */
+#define HW_ATL_RPF_L3_L4_ENF_DEFAULT 0x0
+
 /*! \brief Register address for bitfield flex_en{H} */
 #define HW_ATL_RPF_FLEX_ENH_ADR(header) (0x00005460 + (header) * 0x20)
 /*! \brief Bitmask for bitfield flex_en{H} */
@@ -1640,19 +1480,6 @@
 /*! \brief Default value of bitfield flex_rxqen{H} */
 #define HW_ATL_RPF_FLEX_RXEN_DEFAULT 0x0
 
-/*! \brief Register address for bitfield flex_tag0[1:0] */
-#define HW_ATL_RPF_FLEX_TAG_ADR(header) (0x00005460 + (header) * 0x20)
-/*! \brief Bitmask for bitfield flex_tag0[1:0] */
-#define HW_ATL_RPF_FLEX_TAG_MSK 0x06000000
-/*! \brief Inverted bitmask for bitfield flex_tag0[1:0] */
-#define HW_ATL_RPF_FLEX_TAG_MSKN 0xF9FFFFFF
-/*! \brief Lower bit position of bitfield flex_tag0[1:0] */
-#define HW_ATL_RPF_FLEX_TAG_SHIFT 25
-/*! \brief Width of bitfield flex_tag0[1:0] */
-#define HW_ATL_RPF_FLEX_TAG_WIDTH 2
-/*! \brief Default value of bitfield flex_tag0[1:0] */
-#define HW_ATL_RPF_FLEX_TAG_DEFAULT 0x0
-
 /*! \brief Register address for bitfield flex_rxq{H}[4:0] */
 #define HW_ATL_RPF_FLEX_RXQH_ADR(header) (0x00005460 + (header) * 0x20)
 /*! \brief Bitmask for bitfield flex_rxq{H}[4:0] */
@@ -1665,19 +1492,6 @@
 #define HW_ATL_RPF_FLEX_RXQH_WIDTH 5
 /*! \brief Default value of bitfield flex_rxq{H}[4:0] */
 #define HW_ATL_RPF_FLEX_RXQH_DEFAULT 0x0
-
-/*! \brief Register address for bitfield flex_mng_rxq{H} */
-#define HW_ATL_RPF_FLEX_MNGRXQH_ADR(header) (0x00005460 + (header) * 0x20)
-/*! \brief Bitmask for bitfield flex_mng_rxq{H} */
-#define HW_ATL_RPF_FLEX_MNGRXQH_MSK 0x00080000
-/*! \brief Inverted bitmask for bitfield flex_mng_rxq{H} */
-#define HW_ATL_RPF_FLEX_MNGRXQH_MSKN 0xFFF7FFFF
-/*! \brief Lower bit position of bitfield flex_mng_rxq{H} */
-#define HW_ATL_RPF_FLEX_MNGRXQH_SHIFT 19
-/*! \brief Width of bitfield flex_mng_rxq{H} */
-#define HW_ATL_RPF_FLEX_MNGRXQH_WIDTH 1
-/*! \brief Default value of bitfield flex_mng_rxq{H} */
-#define HW_ATL_RPF_FLEX_MNGRXQH_DEFAULT 0x0
 
 /*! \brief Register address for bitfield flex_act{H}[2:0] */
 #define HW_ATL_RPF_FLEX_ACTH_ADR(header) (0x00005460 + (header) * 0x20)
@@ -1901,6 +1715,37 @@
 /*! \brief Default value of bitfield flex_filter_len[5:0] */
 #define HW_ATL_RPF_FLEX_FILTERLEN_DEFAULT 0x20
 
+/*! \brief Register address for bitfield desc_init */
+#define HW_ATL_RDM_DESC_INIT_ADR 0x00005A00
+/*! \brief Bitmask for bitfield desc_init */
+#define HW_ATL_RDM_DESC_INIT_MSK 0x00000001
+/*! \brief Inverted bitmask for bitfield desc_init */
+#define HW_ATL_RDM_DESC_INIT_MSKN 0xFFFFFFFE
+/*! \brief Lower bit position of bitfield desc_init */
+#define HW_ATL_RDM_DESC_INIT_SHIFT 0
+/*! \brief Width of bitfield desc_init */
+#define HW_ATL_RDM_DESC_INIT_WIDTH 1
+/*! \brief Default value of bitfield desc_init */
+#define HW_ATL_RDM_DESC_INIT_DEFAULT 0x0
+
+/*! \brief Register address for bitfield desc_cache_init */
+#define HW_ATL_TDM_DESC_CACHE_INIT_ADR 0x00007B00
+/*! \brief Bitmask for bitfield desc_cache_init */
+#define HW_ATL_TDM_DESC_CACHE_MSK 0x00000001
+/*! \brief Inverted bitmask for bitfield desc_cache_init */
+#define HW_ATL_TDM_DESC_CACHE_MSKN 0xFFFFFFFE
+/*! \brief Lower bit position of bitfield desc_cache_init */
+#define HW_ATL_TDM_DESC_CACHE_SHIFT 0
+/*! \brief Width of bitfield desc_cache_init */
+#define HW_ATL_TDM_DESC_CACHE_WIDTH 1
+/*! \brief Default value of bitfield desc_cache_init */
+#define HW_ATL_TDM_DESC_CACHE_DEFAULT 0x0
+/*@}*/
+
+/* global microprocessor scratch pad definitions */
+#define HW_ATL_GLB_CPU_SCRPAD2_SCP_ADR(scratch_pad) \
+	(0x000050a0u + (scratch_pad) * 0x4)
+
 /* rx ipv4_chk_en bitfield definitions
  * preprocessor definitions for the bitfield "ipv4_chk_en".
  * port="pif_rpo_ipv4_chk_en_i"
@@ -1992,6 +1837,15 @@
 #define HW_ATL_RX_REG_RES_DSBL_WIDTH 1
 /* default value of bitfield reg_res_dsbl */
 #define HW_ATL_RX_REG_RES_DSBL_DEFAULT 0x1
+
+/* RX reset Bitfield Definitions
+ */
+#define HW_ATL_RX_RESET_ADR 0x00005000
+#define HW_ATL_RX_RESET_MSK 0x80000000
+#define HW_ATL_RX_RESET_MSKN 0x7FFFFFFF
+#define HW_ATL_RX_RESET_SHIFT 31
+#define HW_ATL_RX_RESET_WIDTH 1
+#define HW_ATL_RX_RESET_DEFAULT 0x0
 
 /* tx dca{d}_cpuid[7:0] bitfield definitions
  * preprocessor definitions for the bitfield "dca{d}_cpuid[7:0]".
@@ -2139,6 +1993,15 @@
 #define HW_ATL_TDM_DESCDLEN_WIDTH 10
 /* default value of bitfield desc{d}_len[9:0] */
 #define HW_ATL_TDM_DESCDLEN_DEFAULT 0x0
+
+/* TX early_pkt_brk Bitfield Definitions
+ */
+#define HW_ATL_TDM_EARLY_PKT_BRK_ADR 0x00007B00
+#define HW_ATL_TDM_EARLY_PKT_BRK_MSK 0x00000010
+#define HW_ATL_TDM_EARLY_PKT_BRK_MSKN 0xFFFFFFEF
+#define HW_ATL_TDM_EARLY_PKT_BRK_SHIFT 4
+#define HW_ATL_TDM_EARLY_PKT_BRK_WIDTH 1
+#define HW_ATL_TDM_EARLY_PKT_BRK_DEFAULT 0x1
 
 /* tx int_desc_wrb_en bitfield definitions
  * preprocessor definitions for the bitfield "int_desc_wrb_en".
@@ -2529,6 +2392,42 @@
 /* default value of bitfield lso_tcp_flag_mid[b:0] */
 #define HW_ATL_THM_LSO_TCP_FLAG_MID_DEFAULT 0x0
 
+/* tx tx_tc_mode bitfield definitions
+ * preprocessor definitions for the bitfield "tx_tc_mode".
+ * port="pif_tpb_tx_tc_mode_i,pif_tps_tx_tc_mode_i"
+ */
+
+/* register address for bitfield tx_tc_mode */
+#define HW_ATL_TPB_TX_TC_MODE_ADDR 0x00007900
+/* bitmask for bitfield tx_tc_mode */
+#define HW_ATL_TPB_TX_TC_MODE_MSK 0x00000100
+/* inverted bitmask for bitfield tx_tc_mode */
+#define HW_ATL_TPB_TX_TC_MODE_MSKN 0xFFFFFEFF
+/* lower bit position of bitfield tx_tc_mode */
+#define HW_ATL_TPB_TX_TC_MODE_SHIFT 8
+/* width of bitfield tx_tc_mode */
+#define HW_ATL_TPB_TX_TC_MODE_WIDTH 1
+/* default value of bitfield tx_tc_mode */
+#define HW_ATL_TPB_TX_TC_MODE_DEFAULT 0x0
+
+/* tx tx_desc_rate_mode bitfield definitions
+ * preprocessor definitions for the bitfield "tx_desc_rate_mode".
+ * port="pif_tps_desc_rate_mode_i"
+ */
+
+/* register address for bitfield tx_desc_rate_mode */
+#define HW_ATL_TPS_TX_DESC_RATE_MODE_ADR 0x00007900
+/* bitmask for bitfield tx_desc_rate_mode */
+#define HW_ATL_TPS_TX_DESC_RATE_MODE_MSK 0x00000080
+/* inverted bitmask for bitfield tx_desc_rate_mode */
+#define HW_ATL_TPS_TX_DESC_RATE_MODE_MSKN 0xFFFFFF7F
+/* lower bit position of bitfield tx_desc_rate_mode */
+#define HW_ATL_TPS_TX_DESC_RATE_MODE_SHIFT 7
+/* width of bitfield tx_desc_rate_mode */
+#define HW_ATL_TPS_TX_DESC_RATE_MODE_WIDTH 1
+/* default value of bitfield tx_desc_rate_mode */
+#define HW_ATL_TPS_TX_DESC_RATE_MODE_DEFAULT 0x0
+
 /* tx tx_buf_en bitfield definitions
  * preprocessor definitions for the bitfield "tx_buf_en".
  * port="pif_tpb_tx_buf_en_i"
@@ -2546,19 +2445,6 @@
 #define HW_ATL_TPB_TX_BUF_EN_WIDTH 1
 /* default value of bitfield tx_buf_en */
 #define HW_ATL_TPB_TX_BUF_EN_DEFAULT 0x0
-
-/* register address for bitfield tx_tc_mode */
-#define HW_ATL_TPB_TX_TC_MODE_ADDR 0x00007900
-/* bitmask for bitfield tx_tc_mode */
-#define HW_ATL_TPB_TX_TC_MODE_MSK 0x00000100
-/* inverted bitmask for bitfield tx_tc_mode */
-#define HW_ATL_TPB_TX_TC_MODE_MSKN 0xFFFFFEFF
-/* lower bit position of bitfield tx_tc_mode */
-#define HW_ATL_TPB_TX_TC_MODE_SHIFT 8
-/* width of bitfield tx_tc_mode */
-#define HW_ATL_TPB_TX_TC_MODE_WIDTH 1
-/* default value of bitfield tx_tc_mode */
-#define HW_ATL_TPB_TX_TC_MODE_DEFAULT 0x0
 
 /* tx tx{b}_hi_thresh[c:0] bitfield definitions
  * preprocessor definitions for the bitfield "tx{b}_hi_thresh[c:0]".
@@ -2673,7 +2559,7 @@
 
 /* tx tx_clk_gate_en bitfield definitions
  * preprocessor definitions for the bitfield "tx_clk_gate_en".
- * port="pif_tpb_clk_gate_en_i”"
+ * port="pif_tpb_clk_gate_en_i"
  */
 
 /* register address for bitfield tx_clk_gate_en */
@@ -2760,6 +2646,58 @@
 #define HW_ATL_TPS_DATA_TC_ARB_MODE_WIDTH 1
 /* default value of bitfield data_tc_arb_mode */
 #define HW_ATL_TPS_DATA_TC_ARB_MODE_DEFAULT 0x0
+
+/* tx desc{r}_rate_en bitfield definitions
+ * preprocessor definitions for the bitfield "desc{r}_rate_en".
+ * port="pif_tps_desc_rate_en_i[0]"
+ */
+
+/* register address for bitfield desc{r}_rate_en */
+#define HW_ATL_TPS_DESC_RATE_EN_ADR(desc) (0x00007408 + (desc) * 0x10)
+/* bitmask for bitfield desc{r}_rate_en */
+#define HW_ATL_TPS_DESC_RATE_EN_MSK 0x80000000
+/* inverted bitmask for bitfield desc{r}_rate_en */
+#define HW_ATL_TPS_DESC_RATE_EN_MSKN 0x7FFFFFFF
+/* lower bit position of bitfield desc{r}_rate_en */
+#define HW_ATL_TPS_DESC_RATE_EN_SHIFT 31
+/* width of bitfield desc{r}_rate_en */
+#define HW_ATL_TPS_DESC_RATE_EN_WIDTH 1
+/* default value of bitfield desc{r}_rate_en */
+#define HW_ATL_TPS_DESC_RATE_EN_DEFAULT 0x0
+
+/* tx desc{r}_rate_x bitfield definitions
+ * preprocessor definitions for the bitfield "desc{r}_rate_x".
+ * port="pif_tps_desc0_rate_x"
+ */
+/* register address for bitfield desc{r}_rate_x */
+#define HW_ATL_TPS_DESC_RATE_X_ADR(desc) (0x00007408 + (desc) * 0x10)
+/* bitmask for bitfield desc{r}_rate_x */
+#define HW_ATL_TPS_DESC_RATE_X_MSK 0x03FF0000
+/* inverted bitmask for bitfield desc{r}_rate_x */
+#define HW_ATL_TPS_DESC_RATE_X_MSKN 0xFC00FFFF
+/* lower bit position of bitfield desc{r}_rate_x */
+#define HW_ATL_TPS_DESC_RATE_X_SHIFT 16
+/* width of bitfield desc{r}_rate_x */
+#define HW_ATL_TPS_DESC_RATE_X_WIDTH 10
+/* default value of bitfield desc{r}_rate_x */
+#define HW_ATL_TPS_DESC_RATE_X_DEFAULT 0x0
+
+/* tx desc{r}_rate_y bitfield definitions
+ * preprocessor definitions for the bitfield "desc{r}_rate_y".
+ * port="pif_tps_desc0_rate_y"
+ */
+/* register address for bitfield desc{r}_rate_y */
+#define HW_ATL_TPS_DESC_RATE_Y_ADR(desc) (0x00007408 + (desc) * 0x10)
+/* bitmask for bitfield desc{r}_rate_y */
+#define HW_ATL_TPS_DESC_RATE_Y_MSK 0x00003FFF
+/* inverted bitmask for bitfield desc{r}_rate_y */
+#define HW_ATL_TPS_DESC_RATE_Y_MSKN 0xFFFFC000
+/* lower bit position of bitfield desc{r}_rate_y */
+#define HW_ATL_TPS_DESC_RATE_Y_SHIFT 0
+/* width of bitfield desc{r}_rate_y */
+#define HW_ATL_TPS_DESC_RATE_Y_WIDTH 14
+/* default value of bitfield desc{r}_rate_y */
+#define HW_ATL_TPS_DESC_RATE_Y_DEFAULT 0x0
 
 /* tx desc_rate_ta_rst bitfield definitions
  * preprocessor definitions for the bitfield "desc_rate_ta_rst".
@@ -2926,6 +2864,15 @@
 #define HW_ATL_TX_REG_RES_DSBL_WIDTH 1
 /* default value of bitfield reg_res_dsbl */
 #define HW_ATL_TX_REG_RES_DSBL_DEFAULT 0x1
+
+/* TX reset Bitfield Definitions
+ */
+#define HW_ATL_TX_RESET_ADR 0x00007000
+#define HW_ATL_TX_RESET_MSK 0x80000000
+#define HW_ATL_TX_RESET_MSKN 0x7FFFFFFF
+#define HW_ATL_TX_RESET_SHIFT 31
+#define HW_ATL_TX_RESET_WIDTH 1
+#define HW_ATL_TX_RESET_DEFAULT 0x0
 
 /* mac_phy register access busy bitfield definitions
  * preprocessor definitions for the bitfield "register access busy".
@@ -3101,33 +3048,6 @@
 
 #define HW_ATL_TX_INTR_MODERATION_CTL_ADR(queue) (0x00008980u + (queue) * 0x4)
 
-/*! \brief Register address for bitfield desc_init */
-#define HW_ATL_RDM_DESC_INIT_ADR 0x00005A00
-/*! \brief Bitmask for bitfield desc_init */
-#define HW_ATL_RDM_DESC_INIT_MSK 0x00000001
-/*! \brief Inverted bitmask for bitfield desc_init */
-#define HW_ATL_RDM_DESC_INIT_MSKN 0xFFFFFFFE
-/*! \brief Lower bit position of bitfield desc_init */
-#define HW_ATL_RDM_DESC_INIT_SHIFT 0
-/*! \brief Width of bitfield desc_init */
-#define HW_ATL_RDM_DESC_INIT_WIDTH 1
-/*! \brief Default value of bitfield desc_init */
-#define HW_ATL_RDM_DESC_INIT_DEFAULT 0x0
-
-/*! \brief Register address for bitfield desc_cache_init */
-#define HW_ATL_TDM_DESC_CACHE_INIT_ADR 0x00007B00
-/*! \brief Bitmask for bitfield desc_cache_init */
-#define HW_ATL_TDM_DESC_CACHE_MSK 0x00000001
-/*! \brief Inverted bitmask for bitfield desc_cache_init */
-#define HW_ATL_TDM_DESC_CACHE_MSKN 0xFFFFFFFE
-/*! \brief Lower bit position of bitfield desc_cache_init */
-#define HW_ATL_TDM_DESC_CACHE_SHIFT 0
-/*! \brief Width of bitfield desc_cache_init */
-#define HW_ATL_TDM_DESC_CACHE_WIDTH 1
-/*! \brief Default value of bitfield desc_cache_init */
-#define HW_ATL_TDM_DESC_CACHE_DEFAULT 0x0
-/*@}*/
-
 /* pcie reg_res_dsbl bitfield definitions
  * preprocessor definitions for the bitfield "reg_res_dsbl".
  * port="pif_pci_reg_res_dsbl_i"
@@ -3170,63 +3090,13 @@
 /* default value of bitfield uP Force Interrupt */
 #define HW_ATL_MCP_UP_FORCE_INTERRUPT_DEFAULT 0x0
 
-
-/* global microprocessor scratch pad definitions */
-#define HW_ATL_GLB_CPU_SCRPAD2_SCP_ADR(scratch_pad) \
-	(0x000050a0u + (scratch_pad) * 0x4)
-
-
-#define HW_ATL_RX_CTRL_ADDR_BEGIN_FL3L4   0x00005380
-#define HW_ATL_RX_SRCA_ADDR_BEGIN_FL3L4   0x000053B0
-#define HW_ATL_RX_DESTA_ADDR_BEGIN_FL3L4  0x000053D0
-
-#define HW_ATL_RPF_L3_REG_CTRL_ADR(location) (0x00005380 + (location) * 0x4)
-
-/* RX rpf_l3_sa{D}[1F:0] Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_sa{D}[1F:0]".
- * Parameter: location {D} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_sa0_i[31:0]"
- */
-
-/* Register address for bitfield pif_rpf_l3_sa0_i[31:0] */
-#define HW_ATL_RPF_L3_SRCA_ADR(location) (0x000053B0 + (location) * 0x4)
-/* Bitmask for bitfield l3_sa0[1F:0] */
-#define HW_ATL_RPF_L3_SRCA_MSK 0xFFFFFFFFu
-/* Inverted bitmask for bitfield l3_sa0[1F:0] */
-#define HW_ATL_RPF_L3_SRCA_MSKN 0xFFFFFFFFu
-/* Lower bit position of bitfield l3_sa0[1F:0] */
-#define HW_ATL_RPF_L3_SRCA_SHIFT 0
-/* Width of bitfield l3_sa0[1F:0] */
-#define HW_ATL_RPF_L3_SRCA_WIDTH 32
-/* Default value of bitfield l3_sa0[1F:0] */
-#define HW_ATL_RPF_L3_SRCA_DEFAULT 0x0
-
-/* RX rpf_l3_da{D}[1F:0] Bitfield Definitions
- * Preprocessor definitions for the bitfield "l3_da{D}[1F:0]".
- * Parameter: location {D} | stride size 0x4 | range [0, 7]
- * PORT="pif_rpf_l3_da0_i[31:0]"
- */
-
- /* Register address for bitfield pif_rpf_l3_da0_i[31:0] */
-#define HW_ATL_RPF_L3_DSTA_ADR(location) (0x000053B0 + (location) * 0x4)
-/* Bitmask for bitfield l3_da0[1F:0] */
-#define HW_ATL_RPF_L3_DSTA_MSK 0xFFFFFFFFu
-/* Inverted bitmask for bitfield l3_da0[1F:0] */
-#define HW_ATL_RPF_L3_DSTA_MSKN 0xFFFFFFFFu
-/* Lower bit position of bitfield l3_da0[1F:0] */
-#define HW_ATL_RPF_L3_DSTA_SHIFT 0
-/* Width of bitfield l3_da0[1F:0] */
-#define HW_ATL_RPF_L3_DSTA_WIDTH 32
-/* Default value of bitfield l3_da0[1F:0] */
-#define HW_ATL_RPF_L3_DSTA_DEFAULT 0x0
-
 /* Preprocessor definitions for Global MDIO Interfaces
  * Address: 0x00000280 + 0x4 * Number of interface
  */
 #define HW_ATL_GLB_MDIO_IFACE_ADDR_BEGIN   0x00000280u
 
 #define HW_ATL_GLB_MDIO_IFACE_N_ADR(number) \
-	(HW_ATL_GLB_MDIO_IFACE_ADDR_BEGIN + ((number - 1) * 0x4))
+	(HW_ATL_GLB_MDIO_IFACE_ADDR_BEGIN + (((number) - 1) * 0x4))
 
 /* MIF MDIO Busy Bitfield Definitions
  * Preprocessor definitions for the bitfield "MDIO Busy".

@@ -1,10 +1,8 @@
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+// SPDX-License-Identifier: GPL-2.0-only
+/* Atlantic Network Driver
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /*
@@ -27,7 +25,7 @@
 
 #ifdef TSN_SUPPORT
 
-static void aq_get_link_status(struct aq_tsn_s *self, struct atl_link_state __user *ureq)
+static int aq_get_link_status(struct aq_tsn_s *self, struct atl_link_state __user *ureq)
 {
 	struct atl_link_state link = {ATL_LINK_DOWN, 0};
 	int ingress = 0, egress = 0;
@@ -51,12 +49,11 @@ static void aq_get_link_status(struct aq_tsn_s *self, struct atl_link_state __us
 			break;
 	}
 	if( link.speed != ATL_LINK_DOWN ) {
-		aq_ptp_offset_get(self->aq_nic->link_status.mbps, &egress, &ingress);
+		aq_ptp_offset_get(self->aq_nic->aq_ptp, self->aq_nic->link_status.mbps, &egress, &ingress);
 	}
 	link.hw_offsets = (ingress << 16) | (egress & 0xffff);
-	copy_to_user(ureq, &link, sizeof(link));
+	return copy_to_user(ureq, &link, sizeof(link));
 }
-
 // aq_tsn->memreg_lock must be held
 static void __aq_unlink_mem(struct aq_memreg *memreg)
 {
@@ -68,7 +65,9 @@ static void aq_free_mem(struct aq_memreg *memreg)
 {
 	void *dev = aq_nic_get_dev(memreg->aq_tsn->aq_nic);
 	aq_hide_memreg(memreg);
-	dma_free_coherent(dev, memreg->real_size, memreg->vaddr, memreg->paddr);
+
+	dma_free_coherent(dev, memreg->real_size,
+			  memreg->vaddr, memreg->paddr);
 	kobject_put(&memreg->kobj);
 }
 
@@ -128,13 +127,12 @@ static int aq_allocate_buffer(struct aq_tsn_s *self, struct aq_alloc_mem __user 
 	memreg->index = req.index = idx = ret;
 #endif
 
-	//memreg->index = req.index = (int)((memreg->paddr >> 12) & 0xffffffff);
 	ret = aq_publish_memreg(memreg);
 	if (ret) {
 		dev_err(aq_nic_get_dev(self->aq_nic), "Can't publish memreg to sysfs: %d", ret);
 		goto err_publish;
 	}
-	
+
 	if(copy_to_user(ureq, &req, sizeof(req))) {
 		ret = -EFAULT;
 		goto err_copy_to_user;
@@ -184,13 +182,15 @@ int aq_tsn_init(struct aq_nic_s *aq_nic, struct ifreq *ifr)
 	atomic_inc(&self->ref_cnt);
 	self->aq_nic = aq_nic;
 	err = aq_create_attrs(self);
-	if( !err ) {
-		aq_nic->aq_tsn = self;
-		if( aq_nic->aq_fw_ops->enable_tsn )
-			aq_nic->aq_fw_ops->enable_tsn(aq_nic->aq_hw, 1);
-		if( aq_nic->aq_hw_ops->hw_tsn_enable )
-			aq_nic->aq_hw_ops->hw_tsn_enable(aq_nic->aq_hw, 1);
+	if (err) {
+		kfree(self);
+		goto out;
 	}
+	aq_nic->aq_tsn = self;
+	if( aq_nic->aq_fw_ops->enable_tsn )
+		aq_nic->aq_fw_ops->enable_tsn(aq_nic->aq_hw, 1);
+	if( aq_nic->aq_hw_ops->hw_tsn_enable )
+		aq_nic->aq_hw_ops->hw_tsn_enable(aq_nic->aq_hw, 1);
 out:
 	return err;
 }
@@ -215,6 +215,7 @@ int aq_tsn_release(struct aq_nic_s *aq_nic, bool force)
 		aq_nic->aq_hw_ops->hw_tsn_enable(aq_nic->aq_hw, 0);
 
 	aq_del_attrs(self);
+
 	mutex_lock(&self->memreg_lock);
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,15,0)
 	idr_remove_all(&self->memreg_idr);
@@ -261,6 +262,7 @@ int aq_tsn_free_dma_buf(struct aq_nic_s *aq_nic, struct ifreq *ifr)
 	if (memreg)
 		__aq_unlink_mem(memreg);
 	mutex_unlock(&self->memreg_lock);
+
 	if (!memreg)
 		return -ENOENT;
 	aq_free_mem(memreg);
@@ -270,22 +272,13 @@ int aq_tsn_free_dma_buf(struct aq_nic_s *aq_nic, struct ifreq *ifr)
 
 int aq_tsn_get_link(struct aq_nic_s *aq_nic, struct ifreq *ifr)
 {
-	int err = 0;
 	struct aq_tsn_s *self = aq_nic->aq_tsn;
 
 	if (!self)  // TSN is uninitialised
 		return 0;
 
-	aq_get_link_status(self, (struct atl_link_state __user *) ifr->ifr_data);
-	return err;
+	return aq_get_link_status(self, (struct atl_link_state __user *) ifr->ifr_data);
 }
-
-void aq_tsn_apply_link_speed(struct aq_nic_s *aq_nic, unsigned int mbps)
-{
-	if( aq_nic->aq_hw_ops->apply_link_speed )
-		aq_nic->aq_hw_ops->apply_link_speed(aq_nic->aq_hw, mbps);
-}
-
 #endif
 
 

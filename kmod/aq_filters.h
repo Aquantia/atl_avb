@@ -1,5 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/* Copyright (C) 2014-2019 aQuantia Corporation. */
+/* Atlantic Network Driver
+ *
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
+ */
 
 /* File aq_filters.h: RX filters related functions. */
 
@@ -21,6 +25,8 @@ enum aq_rx_filter_type {
 	aq_rx_filter_type_l4flex = 0x2000,
 	aq_rx_filter_type_chain = 0x10000,
 };
+
+#define CHAINING_QUEUE 	0x7F
 
 struct aq_rx_filter {
 	struct hlist_node aq_node;

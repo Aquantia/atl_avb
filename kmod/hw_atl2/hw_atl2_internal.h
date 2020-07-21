@@ -1,10 +1,6 @@
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* Atlantic Network Driver
+ * Copyright (C) 2020 Marvell International Ltd.
  */
 
 /* File hw_atl2_internal.h: Definition of Atlantic2 chip specific
@@ -14,7 +10,7 @@
 #ifndef HW_ATL2_INTERNAL_H
 #define HW_ATL2_INTERNAL_H
 
-#include "../aq_common.h"
+#include "aq_common.h"
 
 #define HW_ATL2_MTU_JUMBO  16352U
 #define HW_ATL2_MTU        1514U
@@ -28,78 +24,48 @@
 
 #define HW_ATL2_MAC_UC   0U
 #define HW_ATL2_MAC_MIN  1U
-#define HW_ATL2_MAC_MAX  33U
+#define HW_ATL2_MAC_MAX  38U
 
 /* UCAST/MCAST filters */
 #define HW_ATL2_UCAST_FILTERS_MAX 38
 
 /* interrupts */
 #define HW_ATL2_ERR_INT 8U
-#define HW_ATL2_TSG_GPIO_INT (0xAU)
 #define HW_ATL2_INT_MASK  (0xFFFFFFFFU)
 
-#define HW_ATL2_TXD_CTL2_LEN        (0xFFFFC000)
-#define HW_ATL2_TXD_CTL2_CTX_EN     (0x00002000)
-#define HW_ATL2_TXD_CTL2_CTX_IDX    (0x00001000)
-
-#define HW_ATL2_TXD_CTL_DESC_TYPE_TXD   (0x00000001)
-#define HW_ATL2_TXD_CTL_DESC_TYPE_TXC   (0x00000002)
 #define HW_ATL2_TXD_CTL_DESC_TYPE_TXTS  (0x00000003)
-#define HW_ATL2_TXD_CTL_BLEN        (0x000FFFF0)
-#define HW_ATL2_TXD_CTL_DD          (0x00100000)
-#define HW_ATL2_TXD_CTL_EOP         (0x00200000)
 #define HW_ATL2_TXD_CTL_TS_EN       (0x40000000)
-#define HW_ATL2_TXD_CTL_TS_PTP      (0x80000000)
-
-#define HW_ATL2_TXD_CTL_CMD_X       (0x3FC00000)
-
-#define HW_ATL2_TXD_CTL_CMD_VLAN    BIT(22)
-#define HW_ATL2_TXD_CTL_CMD_FCS     BIT(23)
-#define HW_ATL2_TXD_CTL_CMD_IPCSO   BIT(24)
-#define HW_ATL2_TXD_CTL_CMD_TUCSO   BIT(25)
-#define HW_ATL2_TXD_CTL_CMD_LSO     BIT(26)
-#define HW_ATL2_TXD_CTL_CMD_WB      BIT(27)
-#define HW_ATL2_TXD_CTL_CMD_VXLAN   BIT(28)
-
-#define HW_ATL2_TXD_CTL_CMD_IPV6    BIT(21)
-#define HW_ATL2_TXD_CTL_CMD_TCP     BIT(22)
-
-#define HW_ATL2_MPI_CONTROL_ADR       0x0368U
-#define HW_ATL2_MPI_STATE_ADR         0x036CU
-
-#define HW_ATL2_MPI_SPEED_MSK         0xFFFFU
-#define HW_ATL2_MPI_SPEED_SHIFT       16U
+#define HW_ATL2_TXD_CTL_TS_TSG0      (0x80000000)
 
 #define HW_ATL2_TXBUF_MAX              128U
 #define HW_ATL2_PTP_TXBUF_SIZE           8U
 
-#define HW_ATL2_RXBUF_MAX              160U
-#define HW_ATL2_PTP_RXBUF_SIZE          8U
+#define HW_ATL2_RXBUF_MAX              172U
+#define HW_ATL2_PTP_RXBUF_SIZE          16U
+
+#define HW_ATL2_PTP_FTC_RING_IDX        16U
 
 #ifdef TSN_SUPPORT
-#define HW_ATL2_AVB1_TXBUF_SIZE          20U
-#define HW_ATL2_AVB1_RXBUF_SIZE          30U
-#define HW_ATL2_AVB2_TXBUF_SIZE          20U
-#define HW_ATL2_AVB2_RXBUF_SIZE          30U
+#define HW_ATL2_AVB0_TXBUF_SIZE         20U
+#define HW_ATL2_AVB0_RXBUF_SIZE         30U
+#define HW_ATL2_AVB1_TXBUF_SIZE         20U
+#define HW_ATL2_AVB1_RXBUF_SIZE         30U
 
-#define AQ_A2_CFG_AVB1_4TC_RING_IDX      8U
-#define AQ_A2_CFG_AVB1_8TC_RING_IDX      4U
-#define AQ_A2_CFG_AVB1_FTC_RING_IDX      17U
+#define HW_ATL2_AVB0_4TC_RING_IDX        8U
+#define HW_ATL2_AVB0_8TC_RING_IDX        4U
+#define HW_ATL2_AVB0_FTC_RING_IDX       17U
 
-#define AQ_A2_CFG_AVB2_4TC_RING_IDX      24U
-#define AQ_A2_CFG_AVB2_8TC_RING_IDX      12U
-#define AQ_A2_CFG_AVB2_FTC_RING_IDX      18U
+#define HW_ATL2_AVB1_4TC_RING_IDX       24U
+#define HW_ATL2_AVB1_8TC_RING_IDX       12U
+#define HW_ATL2_AVB1_FTC_RING_IDX       18U
 #endif
 
 #define HW_ATL2_RSS_REDIRECTION_MAX 64U
-#define HW_ATL2_RSS_REDIRECTION_BITS 3U
-#define HW_ATL2_RSS_HASHKEY_BITS 320U
 
 #define HW_ATL2_TCRSS_4_8  1
-#define HW_ATL2_TC_MAX 1U
+#define HW_ATL2_TC_MAX 8U
 #define HW_ATL2_RSS_MAX 8U
 
-#define HW_ATL2_LRO_RXD_MAX 2U
 #define HW_ATL2_RS_SLIP_ENABLED  0U
 
 /* (256k -1(max pay_len) - 54(header)) */
@@ -108,56 +74,8 @@
 /* (256k -1(max pay_len) - 74(header)) */
 #define HAL_ATL2_LSO_IPV6_MAX_SEGMENT_SIZE 262069U
 
-#define HW_ATL2_CHIP_REVISION         0xA0U
-#define HW_ATL2_CHIP_REVISION_UNKNOWN 0xFFU
-
-#define HW_ATL2_FW_SEMA_RAM           0x2U
-
-#define HW_ATL2_TXC_LEN_TUNLEN    (0x0000FF00)
-#define HW_ATL2_TXC_LEN_OUTLEN    (0xFFFF0000)
-
-#define HW_ATL2_TXC_CTL_DESC_TYPE (0x00000007)
-#define HW_ATL2_TXC_CTL_CTX_ID    (0x00000008)
-#define HW_ATL2_TXC_CTL_VLAN      (0x000FFFF0)
-#define HW_ATL2_TXC_CTL_CMD       (0x00F00000)
-#define HW_ATL2_TXC_CTL_L2LEN     (0x7F000000)
-
-#define HW_ATL2_TXC_CTL_L3LEN     (0x80000000)	/* L3LEN lsb */
-#define HW_ATL2_TXC_LEN2_L3LEN    (0x000000FF)	/* L3LE upper bits */
-#define HW_ATL2_TXC_LEN2_L4LEN    (0x0000FF00)
-#define HW_ATL2_TXC_LEN2_MSSLEN   (0xFFFF0000)
-
-#define HW_ATL2_RXD_DD    (0x1)
-#define HW_ATL2_RXD_NCEA0 (0x1)
-
-#define HW_ATL2_RXD_WB_STAT_RSSTYPE (0x0000000F)
-#define HW_ATL2_RXD_WB_STAT_RSSTYPE_SHIFT (0x0)
-#define HW_ATL2_RXD_WB_STAT_PKTTYPE (0x00000FF0)
-#define HW_ATL2_RXD_WB_STAT_PKTTYPE_SHIFT (0x4)
-#define HW_ATL2_RXD_WB_STAT_RXCTRL  (0x00180000)
-#define HW_ATL2_RXD_WB_STAT_RXCTRL_SHIFT (0x13)
-#define HW_ATL2_RXD_WB_STAT_SPLHDR  (0x00200000)
-#define HW_ATL2_RXD_WB_STAT_HDRLEN  (0xFFC00000)
-#define HW_ATL2_RXD_WB_STAT_HDRLEN_SHIFT (0x16)
-
 #define HW_ATL2_RXD_WB_PKTTYPE_VLAN		(1 << 5)
 #define HW_ATL2_RXD_WB_PKTTYPE_VLAN_DOUBLE	(1 << 6)
-
-#define HW_ATL2_RXD_WB_STAT2_DD      (0x0001)
-#define HW_ATL2_RXD_WB_STAT2_EOP     (0x0002)
-#define HW_ATL2_RXD_WB_STAT2_RXSTAT  (0x003C)
-#define HW_ATL2_RXD_WB_STAT2_MACERR  (0x0004)
-#define HW_ATL2_RXD_WB_STAT2_IP4ERR  (0x0008)
-#define HW_ATL2_RXD_WB_STAT2_TCPUPDERR  (0x0010)
-#define HW_ATL2_RXD_WB_STAT2_RXESTAT (0x0FC0)
-#define HW_ATL2_RXD_WB_STAT2_RSCCNT  (0xF000)
-
-#define L2_FILTER_ACTION_DISCARD (0x0)
-#define L2_FILTER_ACTION_HOST    (0x1)
-
-#define HW_ATL2_UCP_0X370_REG  (0x370)
-
-//#define HW_ATL2_FLUSH() AQ_HW_READ_REG(self, 0x10)
 
 #define HW_ATL2_INTR_MODER_MAX  0x1FF
 #define HW_ATL2_INTR_MODER_MIN  0xFF
@@ -169,6 +87,8 @@
 
 #define HW_ATL2_MAX_RXD 8184U
 #define HW_ATL2_MAX_TXD 8184U
+
+#define HW_ATL2_FW_SM_ACT_RSLVR  0x3U
 
 #define HW_ATL2_RPF_TAG_UC_OFFSET      0x0
 #define HW_ATL2_RPF_TAG_ALLMC_OFFSET   0x6
@@ -193,30 +113,24 @@
 #define HW_ATL2_RPF_TAG_FLEX_MASK  (0x00000001 << HW_ATL2_RPF_TAG_FLEX_OFFSET)
 #define HW_ATL2_RPF_TAG_PCP_MASK   (0x00000007 << HW_ATL2_RPF_TAG_PCP_OFFSET)
 
+#define HW_ATL2_RPF_TAG_BC         1
+#define HW_ATL2_RPF_TAG_BASE_UC    BIT(HW_ATL2_RPF_TAG_UC_OFFSET)
+#define HW_ATL2_RPF_TAG_BASE_ALLMC BIT(HW_ATL2_RPF_TAG_ALLMC_OFFSET)
+#define HW_ATL2_RPF_TAG_BASE_UNTAG BIT(HW_ATL2_RPF_TAG_UNTAG_OFFSET)
+#define HW_ATL2_RPF_TAG_BASE_VLAN  BIT(HW_ATL2_RPF_TAG_VLAN_OFFSET)
 
-#define HW_ATL2_RPF_TAG_BASE_UC    (1 << HW_ATL2_RPF_TAG_UC_OFFSET)
-#define HW_ATL2_RPF_TAG_BASE_ALLMC (1 << HW_ATL2_RPF_TAG_ALLMC_OFFSET)
-#define HW_ATL2_RPF_TAG_BASE_UNTAG (1 << HW_ATL2_RPF_TAG_UNTAG_OFFSET)
-#define HW_ATL2_RPF_TAG_BASE_VLAN  (1 << HW_ATL2_RPF_TAG_VLAN_OFFSET)
-
-#define HW_ATL2_RPF_L2_PROMISC_OFF_INDEX   0
-#define HW_ATL2_RPF_VLAN_PROMISC_OFF_INDEX 1
-#define HW_ATL2_RPF_CHAIN_INDEX            16
-#define HW_ATL2_RPF_FLEX_INDEX             46
-#define HW_ATL2_RPF_L3L4_USER_INDEX        48
-#define HW_ATL2_RPF_FLEX_INDEX             46
-#define HW_ATL2_RPF_ET_PCP_USER_INDEX      64
-#define HW_ATL2_RPF_VLAN_USER_INDEX        80
-#define HW_ATL2_RPF_FW_FIRST_INDEX         96
-#define HW_ATL2_RPF_FW_LAST_INDEX          111
-#define HW_ATL2_RPF_DST_FIRST_INDEX        112
-#define HW_ATL2_RPF_DST_LAST_INDEX         120
-#define HW_ATL2_RPF_VLAN_INDEX             121
-#define HW_ATL2_RPF_MAC_INDEX              122
-#define HW_ATL2_RPF_ALLMC_INDEX            124
-#define HW_ATL2_RPF_UNTAG_INDEX            125
-#define HW_ATL2_RPF_VLAN_PROMISC_ON_INDEX  126
-#define HW_ATL2_RPF_L2_PROMISC_ON_INDEX    127
+enum HW_ATL2_RPF_ART_INDEX {
+	HW_ATL2_RPF_L2_PROMISC_OFF_INDEX,
+	HW_ATL2_RPF_VLAN_PROMISC_OFF_INDEX,
+	HW_ATL2_RPF_CHAIN_INDEX = 16,
+	HW_ATL2_RPF_FLEX_INDEX = HW_ATL2_RPF_CHAIN_INDEX + 14,
+	HW_ATL2_RPF_L3L4_USER_INDEX	= HW_ATL2_RPF_FLEX_INDEX + 2,
+	HW_ATL2_RPF_ET_PCP_USER_INDEX = HW_ATL2_RPF_L3L4_USER_INDEX + 16,
+	HW_ATL2_RPF_VLAN_USER_INDEX	= HW_ATL2_RPF_ET_PCP_USER_INDEX + 8,
+	HW_ATL2_RPF_DST_FIRST_INDEX = HW_ATL2_RPF_VLAN_USER_INDEX + 12,
+	HW_ATL2_RPF_PCP_TO_TC_INDEX	= HW_ATL2_RPF_DST_FIRST_INDEX + 4,
+	HW_ATL2_RPF_INDEX_NUMBER = HW_ATL2_RPF_PCP_TO_TC_INDEX + 8,
+};
 
 #define HW_ATL2_RPF_L3_CMD_EN       BIT(0)
 #define HW_ATL2_RPF_L3_CMD_SA_EN    BIT(1)
@@ -224,28 +138,63 @@
 #define HW_ATL2_RPF_L3_CMD_PROTO_EN BIT(3)
 #define HW_ATL2_RPF_L3_V6_V4_SELECT BIT(7)
 
+#define HW_ATL2_RPF_L3_V6_CMD_EN       BIT(0x10)
+#define HW_ATL2_RPF_L3_V6_CMD_SA_EN    BIT(0x11)
+#define HW_ATL2_RPF_L3_V6_CMD_DA_EN    BIT(0x12)
+#define HW_ATL2_RPF_L3_V6_CMD_PROTO_EN BIT(0x13)
+
 #define HW_ATL2_RPF_L4_CMD_EN       BIT(0)
 #define HW_ATL2_RPF_L4_CMD_DP_EN    BIT(1)
 #define HW_ATL2_RPF_L4_CMD_SP_EN    BIT(2)
 
+#define HW_ATL2_ACTION(ACTION, RSS, INDEX, VALID) \
+	((((ACTION) & 0x3U) << 8) | \
+	(((RSS) & 0x1U) << 7) | \
+	(((INDEX) & 0x3FU) << 2) | \
+	(((VALID) & 0x1U) << 0))
 
-#define HW_ATL2_ACTION(ACTION, RSS, INDEX, VALID, TS_VALID) \
-	(((ACTION & 0x3U) << 8) | \
-	((RSS & 0x1U) << 7) | \
-	((INDEX & 0x3FU) << 2) | \
-	((TS_VALID & 0x1U) << 1)) | \
-	((VALID & 0x1U) << 0)
+#define HW_ATL2_ACTION_DROP HW_ATL2_ACTION(0, 0, 0, 1)
+#define HW_ATL2_ACTION_DISABLE HW_ATL2_ACTION(0, 0, 0, 0)
+#define HW_ATL2_ACTION_ASSIGN_QUEUE(QUEUE) HW_ATL2_ACTION(1, 0, (QUEUE), 1)
+#define HW_ATL2_ACTION_ASSIGN_TC(TC) HW_ATL2_ACTION(1, 1, (TC), 1)
 
-#define HW_ATL2_ACTION_DROP HW_ATL2_ACTION(0, 0, 0, 1, 0)
-#define HW_ATL2_ACTION_DISABLE HW_ATL2_ACTION(0, 0, 0, 0, 0)
-#define HW_ATL2_ACTION_ASSIGN_QUEUE(QUEUE) HW_ATL2_ACTION(1, 0, (QUEUE), 1, 0)
-#define HW_ATL2_ACTION_ASSIGN_TC(TC) HW_ATL2_ACTION(1, 1, (TC), 1, 0)
+#define HW_ATL2_RPF_L3L4_FILTERS 8
+#define HW_ATL2_RPF_L3V4_FILTERS 8
+#define HW_ATL2_RPF_L3V6_FILTERS 6
+#define HW_ATL2_RPF_L4_FILTERS 8
+#define HW_ATL2_RPF_VLAN_FILTERS 16
+#define HW_ATL2_RPF_ETYPE_FILTERS 16
+#define HW_ATL2_RPF_ETYPE_TAGS 7
 
-#define HW_ATL2_RPF_L3L4_FILTERS_SIZE 8
+#define HW_ATL2_FLEX0_AVAILABLE_BIT BIT(0)
+enum HW_ATL2_RPF_RSS_HASH_TYPE {
+	HW_ATL2_RPF_RSS_HASH_TYPE_NONE = 0,
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV4 = BIT(0),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV4_TCP = BIT(1),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV4_UDP = BIT(2),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV6 = BIT(3),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_TCP = BIT(4),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_UDP = BIT(5),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_EX = BIT(6),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_EX_TCP = BIT(7),
+	HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_EX_UDP = BIT(8),
+	HW_ATL2_RPF_RSS_HASH_TYPE_ALL = HW_ATL2_RPF_RSS_HASH_TYPE_IPV4 |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV4_TCP |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV4_UDP |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV6 |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_TCP |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_UDP |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_EX |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_EX_TCP |
+					HW_ATL2_RPF_RSS_HASH_TYPE_IPV6_EX_UDP,
+};
+
+#define HW_ATL_MCAST_FLT_ANY_TO_HOST 0x00010FFFU
+#define HW_ATL2_FLEX1_AVAILABLE_BIT BIT(1)
 
 struct hw_atl2_l3_filter {
 	u8 ipv6:1;
-	u16 cmd_l3;
+	u32 cmd_l3;
 	u32 srcip[4];
 	u32 dstip[4];
 };
@@ -262,12 +211,61 @@ struct hw_atl2_l3l4_filter {
 	u32 action;
 };
 
+/** Find tag with the same action or new free tag
+ *  top - top inclusive tag value
+ *  action - action for ActionResolverTable
+ *
+static inline int hw_atl2_filter_tag_get(struct hw_atl2_tag_policy *tags,
+					 int top, u16 action)
+{
+	int i;
+
+	for (i = 1; i <= top; i++)
+		if ((tags[i].usage > 0) && (tags[i].action == action)) {
+			tags[i].usage++;
+			return i;
+		}
+
+	for (i = 1; i <= top; i++)
+		if (tags[i].usage == 0) {
+			tags[i].usage = 1;
+			tags[i].action = action;
+			return i;
+		}
+
+	return -1;
+}
+
+static inline void hw_atl2_filter_tag_put(struct hw_atl2_tag_policy *tags,
+					  int tag)
+{
+	if (tags[tag].usage > 0)
+		tags[tag].usage--;
+}
+*/
 struct hw_atl2_priv {
-	struct hw_atl2_l3_filter l3_filters[HW_ATL2_RPF_L3L4_FILTERS_SIZE];
-	struct hw_atl2_l4_filter l4_filters[HW_ATL2_RPF_L3L4_FILTERS_SIZE];
-	struct hw_atl2_l3l4_filter l3l4_filters[HW_ATL2_RPF_L3L4_FILTERS_SIZE];
+	u8 special_uc_tag[HW_ATL2_MAC_MAX - HW_ATL2_MAC_MIN];
 	struct statistics_s last_stats;
+	u32 cable_diag_tid1;
+	u32 ext_int_flags;
+	u32 ptp_check_cntr; //W/A for bug ANTIGUAA0-366
+	s32 ppb;
+	unsigned int art_base_index;
+	unsigned int art_count;
+	unsigned int l2_filters_base_index;
+	unsigned int l2_filter_count;
+	unsigned int etype_filter_base_index;
+	unsigned int etype_filter_count;
+	unsigned int etype_filter_tag_top;
+	unsigned int vlan_filter_base_index;
+	unsigned int vlan_filter_count;
+	unsigned int l3_v4_filter_base_index;
+	unsigned int l3_v4_filter_count;
+	unsigned int l3_v6_filter_base_index;
+	unsigned int l3_v6_filter_count;
+	unsigned int l4_filter_base_index;
+	unsigned int l4_filter_count;
+	unsigned int flex_filter_available;
 };
-/* HW layer capabilities */
 
 #endif /* HW_ATL2_INTERNAL_H */

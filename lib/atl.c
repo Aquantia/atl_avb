@@ -71,7 +71,9 @@
 #define TSN_CLASS_A_PPS 8000
 #define TSN_CLASS_B_PPS 4000
 
-#define HW_ATL_MPI_FW_VERSION	0x18
+#define HW_ATL_FW_BUNDLE_VER_REG	0x18
+#define HW_ATL2_FW_BUNDLE_VER_MSW_REG	0x13004
+#define HW_ATL2_FW_BUNDLE_VER_LSW_REG	0x13008
 
 static int atl_readreg(device_t *dev, u_int32_t reg, u_int32_t *data);
 static int atl_writereg(device_t *dev, u_int32_t reg, u_int32_t data);
@@ -110,17 +112,17 @@ void __dump(u_int32_t lvl, const char *path, int line, const char *name, u_int8_
 	}
 	if( i*16 < len ) {
 		const int MAX_DUMP_LINE_SIZE = 54;
-		char buf[MAX_DUMP_LINE_SIZE];
+		char out[MAX_DUMP_LINE_SIZE];
 		int offset = 0;
-		offset += snprintf(&buf[offset], MAX_DUMP_LINE_SIZE - offset, "%03x :", i*16);
+		offset += snprintf(&out[offset], MAX_DUMP_LINE_SIZE - offset, "%03x :", i*16);
 		len -= i*16;
 		for( i = 0; i < len; i++ ) {
 			if( i == 8 )
-				offset += snprintf(&buf[offset], MAX_DUMP_LINE_SIZE - offset, " ");
-			offset += snprintf(&buf[offset], MAX_DUMP_LINE_SIZE - offset, " %02x", buf[i]);
+				offset += snprintf(&out[offset], MAX_DUMP_LINE_SIZE - offset, " ");
+			offset += snprintf(&out[offset], MAX_DUMP_LINE_SIZE - offset, " %02x", buf[i]);
 		}
-		buf[offset] = '\0';
-		__logprint(lvl, path, line, "%s", buf);
+		out[offset] = '\0';
+		__logprint(lvl, path, line, "%s", out);
 	}
 	__logprint(lvl, path, line, "");
 }
@@ -143,9 +145,11 @@ static atl_vendor_info_t atl_vendor_info_array[] = {
 	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC107,	AQ_HWREV_2,		&hw_atl_avb_ops_b0, },
 	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC107S,	AQ_HWREV_2,		&hw_atl_avb_ops_b0, },
 	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC107,	AQ_HWREV_2,		&hw_atl_avb_ops_b0, },
-	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_0001,		AQ_HWREV_ANY,	&hw_atl2_avb_ops, },
+	//{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_0001,		AQ_HWREV_ANY,	&hw_atl2_avb_ops, }, //FPGA support
 	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC113,	AQ_HWREV_ANY,	&hw_atl2_avb_ops, },
-	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC107,	AQ_HWREV_ANY,	&hw_atl_avb_ops_b0, },
+	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC113CS,	AQ_HWREV_ANY,	&hw_atl2_avb_ops, },
+	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC113DEV,	AQ_HWREV_ANY,	&hw_atl2_avb_ops, },
+	{ PCI_VENDOR_ID_AQUANTIA,		AQ_DEVICE_ID_AQC113C,	AQ_HWREV_ANY,	&hw_atl2_avb_ops, },
 };
 
 /* Atantic driver name */
@@ -564,29 +568,45 @@ int atl_attach(device_t *pdev)
 		goto err_pci;
 	}
 
-	error = atl_readreg(pdev, HW_ATL2_GLB_MIF_ID_ADR, &hw_rev);
+	error = atl_readreg(pdev, HW_ATL_GLB_MIF_ID_ADR, &hw_rev);
 	if (error) {
 		logprint(LOG_LVL_ERROR, "Cannot read hw rev: %s", strerror(errno));
 		goto err_pci;
 	}
 
-	if( hw_rev & 0x107 == 0x102 ) {
-		error = atl_readreg(pdev, HW_ATL_MPI_FW_VERSION, &spec_rev);
+	if( (hw_rev & AQ_MIF_ID_ATL_XX_MASK) == AQ_MIF_ID_ATL_BX ) {
+		error = atl_readreg(pdev, HW_ATL_FW_BUNDLE_VER_REG, &spec_rev);
 		if (error) {
-			logprint(LOG_LVL_ERROR, "Cannot read hw rev: %s", strerror(errno));
+			logprint(LOG_LVL_ERROR, "Cannot read ATL FW rev: %s", strerror(errno));
 			goto err_pci;
 		}
+		adapter->a1 = true;
+		adapter->a2 = false;
+	} else if(  ((hw_rev & AQ_MIF_ID_ATL_XX_MASK) == AQ_MIF_ID_ANT_A0) ||
+				((hw_rev & AQ_MIF_ID_ATL_XX_MASK) == AQ_MIF_ID_FPGA_ATL2) ||
+				((hw_rev & AQ_MIF_ID_ATL_XX_MASK) == AQ_MIF_ID_ATL2B0_OLD)  ||
+				((hw_rev & AQ_MIF_ID_ATL_XX_MASK) == AQ_MIF_ID_ATL2B0)
+				) {
+		uint32_t rev_msw, rev_lsw;
+		error = atl_readreg(pdev, HW_ATL2_FW_BUNDLE_VER_MSW_REG, &rev_msw);
+		if (!error) {
+			error = atl_readreg(pdev, HW_ATL2_FW_BUNDLE_VER_LSW_REG, &rev_lsw);
+		}
+		if (error) {
+			logprint(LOG_LVL_ERROR, "Cannot read ANT FW rev: %s", strerror(errno));
+			goto err_pci;
+		}
+		spec_rev = ((rev_msw & 0xff) << 24) | ((rev_lsw & 0xff) << 16) | ((rev_lsw & 0xfff) >> 16);
+		adapter->a1 = false;
+		adapter->a2 = true;
 	} else {
-		error = atl_readreg(pdev, HW_ATL2_GLB_FW_ID_ADR, &spec_rev);
-		if (error) {
-			logprint(LOG_LVL_ERROR, "Cannot read hw rev: %s", strerror(errno));
-			goto err_pci;
-		}
+		logprint(LOG_LVL_ERROR, "Unknown hw revision: 0x%x", hw_rev);
+		goto err_pci;
 	}
 
 	adapter->aq_shmem->adapter_ref_cntr++;
 	logprint(LOG_LVL_INFO, "Attach to Aquantia %s device. FW ver: %x.", 
-			hw_rev & 0x3 == 0x3 ? "AQC113" : "AQC107", spec_rev);
+			adapter->a2 ? "AQC113" : adapter->a1 ? "AQC107" : "UNKNOWN", spec_rev);
 	logprint(LOG_LVL_INFO, "Attached process count %d.",
 			adapter->aq_shmem->adapter_ref_cntr);
 	/*
@@ -598,9 +618,6 @@ int atl_attach(device_t *pdev)
 		goto err_late;
 	}
 	*/
-	adapter->a1 = hw_rev & 0x3 == 0x2; //adapter->aq_hw_avb_ops == &hw_atl_avb_ops_b0;
-	adapter->a2 = hw_rev & 0x3 == 0x3; //adapter->aq_hw_avb_ops == &hw_atl2_avb_ops;
-
 	adapter->tx_rings = NULL;
 	adapter->rx_rings = NULL;
 
@@ -675,8 +692,8 @@ int atl_attach_tx(device_t *pdev)
 	if( adapter->a2 ) {
 		u_int32_t data = 0;
 		flags |= TX_RING_FLAG_EG_TS;
-		atl_readreg(pdev, HW_ATL2_RX_FLR_CONTROL2_ADR, &data);
-		flex_filters = !!(data & HW_ATL2_RX_FLR_NEW_RPF_EN_MSK);
+		atl_readreg(pdev, HW_ATL2_RPF_NEW_EN_ADR, &data);
+		flex_filters = !!(data & HW_ATL2_RPF_NEW_EN_MSK);
 	}
 
 	for( i = (adapter->a2 ? MAX_TX_RING_COUNT : 1) - 1; i >= 0 ; i-- ) {
@@ -742,8 +759,8 @@ int atl_attach_rx(device_t *pdev)
 	if( adapter->a2 ) {
 		u_int32_t data = 0;
 		flags |= RX_RING_FLAG_ING_TS;
-		atl_readreg(pdev, HW_ATL2_RX_FLR_CONTROL2_ADR, &data);
-		flex_filters = !!(data & HW_ATL2_RX_FLR_NEW_RPF_EN_MSK);
+		atl_readreg(pdev, HW_ATL2_RPF_NEW_EN_ADR, &data);
+		flex_filters = !!(data & HW_ATL2_RPF_NEW_EN_MSK);
 	}
 
 	for( i = (adapter->a2 ? MAX_RX_RING_COUNT : 1) - 1; i >= 0 ; i-- ) {
@@ -1149,6 +1166,9 @@ static int free_memreg(struct atl_adapter *adapter, struct mmap_res *memreg)
 	munmap(memreg->vaddr, memreg->size);
 	close(memreg->fd);
 	ioctl(adapter->sd, SIOCFREEDMABUF, &ifr);
+
+	logprint(LOG_LVL_DEBUG2, "Released memory (%04d): PA 0x%lx, VA 0x%p, size 0x%x",
+					memreg->idx, memreg->paddr, memreg->vaddr, memreg->size);
 	free(memreg);
 
 	return 0;
@@ -1345,7 +1365,8 @@ int atl_dma_alloc_buffer(struct atl_adapter *adapter, struct atl_dma_alloc *dma)
 		error = errno;
 		goto err_mmap;
 	}
-
+	logprint(LOG_LVL_DEBUG2, "Allocated memory (%04d): PA 0x%lx, VA 0x%p, size 0x%x",
+					memreg->idx, memreg->paddr, memreg->vaddr, memreg->size);
 	list_add(&memreg->list, &adapter->memregs);
 	close(dir_fd);
 
@@ -1457,7 +1478,7 @@ static int atl_writereg(device_t *dev, u_int32_t reg, u_int32_t data)
 	if (adapter == NULL)
 		return -ENXIO;
 
-	if (reg > 0x9000) //TODO better solution
+	if (reg > 0x19000) //TODO better solution
 		return -EINVAL;
 
 	((volatile u32 *)(adapter->bar[0].vaddr))[reg>>2] = data;
@@ -1478,7 +1499,7 @@ static int atl_readreg(device_t *dev, u_int32_t reg, u_int32_t *data)
 	if (data == NULL)
 		return -EINVAL;
 
-	if (reg > 0x9000) //TODO better solution
+	if (reg > 0x19000) //TODO better solution
 		return -EINVAL;
 
 	*data = ((volatile u32 *)(adapter->bar[0].vaddr))[reg>>2];
@@ -1720,6 +1741,7 @@ int atl_xmit(device_t *dev, unsigned int queue_index, struct atl_packet **packet
 		if( send_packet->attime > egress_offset )
 			send_packet->attime -= egress_offset;
 
+		logprint(LOG_LVL_DEBUG2, "Prepare packet xmit. packet %p, lt 0xlx.", send_packet, send_packet->attime);
 		adapter->aq_hw_avb_ops->hw_ring_tx_prepare_xmit(txr, send_packet);
 
 		if( txr->sent_packet == NULL ){
@@ -2071,11 +2093,15 @@ int atl_set_class_bandwidth(device_t *dev, u_int32_t class_a_bytes_per_second,
 	if (err)
 		return -ENXIO;
 
-	if (link.speed == ATL_LINK_DOWN)
+	if (link.speed == ATL_LINK_DOWN) {
+		logprint(LOG_LVL_ERROR, "Can't set bandwith until line side link is down!");
 		return -EINVAL;
+	}
 
-	if (link.speed > ATL_LINK_10G)
+	if (link.speed > ATL_LINK_10G) {
+		logprint(LOG_LVL_ERROR, "Wrong line side link speed: %d!", link.speed);
 		return -EINVAL;
+	}
 
 	if (atl_lock(dev) != 0)
 		return errno;
@@ -2256,9 +2282,6 @@ int atl_setup_filter(device_t *dev, unsigned int queue_index,
 		return -EINVAL;
 	}
 
-	if (atl_lock(dev) != 0)
-		return errno;
-
 	memset(fsp, 0, sizeof(*fsp));
 
 	fsp->location = RX_CLS_LOC_ANY;
@@ -2300,6 +2323,10 @@ int atl_setup_filter(device_t *dev, unsigned int queue_index,
 	(void)strncpy(ifr.ifr_name, dev->ifname, sizeof(ifr.ifr_name)-1);
     nfccmd.cmd = ETHTOOL_SRXCLSRLINS;
     ifr.ifr_data = (void*) &nfccmd;
+
+	if (atl_lock(dev) != 0)
+		return errno;
+
 	if (ioctl(adapter->sd, SIOCETHTOOL, &ifr) < 0) {
 		logprint(LOG_LVL_ERROR, "Cannot apply filter configuration: %s", strerror(errno));
 		error = -ENXIO;

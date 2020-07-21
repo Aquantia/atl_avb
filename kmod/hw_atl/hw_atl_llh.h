@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
+/* Atlantic Network Driver
+ *
+ * Copyright (C) 2014-2019 aQuantia Corporation
+ * Copyright (C) 2019-2020 Marvell International Ltd.
  */
 
 /* File hw_atl_llh.h: Declarations of bitfield and register access functions for
@@ -15,6 +16,24 @@
 
 struct aq_hw_s;
 
+/* set temperature sense reset */
+void hw_atl_ts_reset_set(struct aq_hw_s *aq_hw, u32 val);
+
+/* set temperature sense power down */
+void hw_atl_ts_power_down_set(struct aq_hw_s *aq_hw, u32 val);
+
+/* get temperature sense power down */
+u32 hw_atl_ts_power_down_get(struct aq_hw_s *aq_hw);
+
+/* get temperature sense ready */
+u32 hw_atl_ts_ready_get(struct aq_hw_s *aq_hw);
+
+/* get temperature sense ready latch high */
+u32 hw_atl_ts_ready_latch_high_get(struct aq_hw_s *aq_hw);
+
+/* get temperature sense data */
+u32 hw_atl_ts_data_get(struct aq_hw_s *aq_hw);
+
 /* global */
 
 /* set global microprocessor semaphore */
@@ -26,6 +45,8 @@ u32 hw_atl_reg_glb_cpu_sem_get(struct aq_hw_s *aq_hw, u32 semaphore);
 
 /* set global register reset disable */
 void hw_atl_glb_glb_reg_res_dis_set(struct aq_hw_s *aq_hw, u32 glb_reg_res_dis);
+
+void hw_atl_rx_reset_set(struct aq_hw_s *aq_hw, u32 rx_reset);
 
 /* set soft reset */
 void hw_atl_glb_soft_res_set(struct aq_hw_s *aq_hw, u32 soft_res);
@@ -286,10 +307,6 @@ void hw_atl_reg_glb_cpu_scrpad_set(struct aq_hw_s *aq_hw,
 				   u32 glb_cpu_scratch_pad,
 				   u32 scratch_pad);
 
-void hw_atl_reg_glb_cpu_scrpad2_set(struct aq_hw_s *aq_hw,
-					u32 glb_cpu_scratch_scp,
-					u32 scratch_scp);
-
 /* get global microprocessor scratch pad no reset*/
 u32 hw_atl_reg_glb_cpu_scrpad_nr_get(struct aq_hw_s *aq_hw, u32 scratch_pad);
 
@@ -362,10 +379,16 @@ void hw_atl_rpfl2broadcast_en_set(struct aq_hw_s *aq_hw, u32 l2broadcast_en);
 void hw_atl_rpfl2broadcast_flr_act_set(struct aq_hw_s *aq_hw,
 				       u32 l2broadcast_flr_act);
 
+/* get l2 broadcast filter action */
+u32 hw_atl_rpfl2broadcast_flr_act_get(struct aq_hw_s *aq_hw);
+
 /* set l2 multicast filter enable */
 void hw_atl_rpfl2multicast_flr_en_set(struct aq_hw_s *aq_hw,
 				      u32 l2multicast_flr_en,
 				      u32 filter);
+
+/* get l2 promiscuous mode enable */
+u32 hw_atl_rpfl2promiscuous_mode_en_get(struct aq_hw_s *aq_hw);
 
 /* set l2 promiscuous mode enable */
 void hw_atl_rpfl2promiscuous_mode_en_set(struct aq_hw_s *aq_hw,
@@ -438,6 +461,9 @@ void hw_atl_rpf_vlan_outer_etht_set(struct aq_hw_s *aq_hw, u32 vlan_outer_etht);
 void hw_atl_rpf_vlan_prom_mode_en_set(struct aq_hw_s *aq_hw,
 				      u32 vlan_prom_mode_en);
 
+/* Get VLAN promiscuous mode enable */
+u32 hw_atl_rpf_vlan_prom_mode_en_get(struct aq_hw_s *aq_hw);
+
 /* Set VLAN untagged action */
 void hw_atl_rpf_vlan_untagged_act_set(struct aq_hw_s *aq_hw,
 				      u32 vlan_untagged_act);
@@ -500,67 +526,20 @@ void hw_atl_rpf_etht_flr_act_set(struct aq_hw_s *aq_hw, u32 etht_flr_act,
 /* set ethertype filter */
 void hw_atl_rpf_etht_flr_set(struct aq_hw_s *aq_hw, u32 etht_flr, u32 filter);
 
-/* set L3/L4 filter enable */
-void hw_atl_rpf_l3_l4_enf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3 IPv6 enable */
-void hw_atl_rpf_l3_v6_enf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3 source address enable */
-void hw_atl_rpf_l3_saf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3 destination address enable */
-void hw_atl_rpf_l3_daf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L4 source port enable */
-void hw_atl_rpf_l4_spf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L4 destination port enable */
-void hw_atl_rpf_l4_dpf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L4 protocol enable */
-void hw_atl_rpf_l4_protf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3 ARP filter enable */
-void hw_atl_rpf_l3_arpf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3/L4 rx queue enable */
-void hw_atl_rpf_l3_l4_rxqf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3/L4 management queue */
-void hw_atl_rpf_l3_l4_mng_rxqf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L4 protocol enable */
-void hw_atl_rpf_l4_protf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3/L4 rx queue enable */
-void hw_atl_rpf_l3_l4_rxqf_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3/L4 filter action */
-void hw_atl_rpf_l3_l4_actf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L3/L4 rx queue */
-void hw_atl_rpf_l3_l4_rxqf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-/* set L4 protocol value */
-void hw_atl_rpf_l4_protf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
 /* set L4 source port */
 void hw_atl_rpf_l4_spd_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
 
 /* set L4 destination port */
 void hw_atl_rpf_l4_dpd_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
 
+/* set L3/L4 filter enable */
+void hw_atl_rpf_l3_l4_enf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
 
 void hw_atl_rpf_flex_en_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
 
 void hw_atl_rpf_flex_rxqen_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
 
-void hw_atl_rpf_flex_tag_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
 void hw_atl_rpf_flex_rxqf_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
-
-void hw_atl_rpf_flex_mngrxq_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
 
 void hw_atl_rpf_flex_act_set(struct aq_hw_s *aq_hw, u32 val, u32 filter);
 
@@ -680,6 +659,9 @@ u32 hw_atl_tdm_tx_desc_head_ptr_get(struct aq_hw_s *aq_hw, u32 descriptor);
 void hw_atl_tdm_tx_desc_len_set(struct aq_hw_s *aq_hw, u32 tx_desc_len,
 				u32 descriptor);
 
+void hw_atl_tdm_tx_early_pkt_brk_set(struct aq_hw_s *aq_hw,
+				     const u32 early_pkt_brk);
+
 /* set tx descriptor write-back interrupt enable */
 void hw_atl_tdm_tx_desc_wr_wb_irq_en_set(struct aq_hw_s *aq_hw,
 					 u32 tx_desc_wr_wb_irq_en);
@@ -709,10 +691,11 @@ void hw_atl_thm_lso_tcp_flag_of_middle_pkt_set(struct aq_hw_s *aq_hw,
 /* tpb */
 
 /* set TX Traffic Class Mode */
-void hw_atl_rpb_tps_tx_tc_mode_set(struct aq_hw_s *aq_hw, u32 tx_traf_class_mode);
+void hw_atl_tpb_tps_tx_tc_mode_set(struct aq_hw_s *aq_hw,
+				   u32 tx_traf_class_mode);
 
 /* get TX Traffic Class Mode */
-u32 hw_atl_rpb_tps_tx_tc_mode_get(struct aq_hw_s *aq_hw);
+u32 hw_atl_tpb_tps_tx_tc_mode_get(struct aq_hw_s *aq_hw);
 
 /* set tx buffer enable */
 void hw_atl_tpb_tx_buff_en_set(struct aq_hw_s *aq_hw, u32 tx_buff_en);
@@ -782,13 +765,13 @@ void hw_atl_tps_tx_pkt_shed_desc_tc_arb_mode_set(struct aq_hw_s *aq_hw,
 
 /* set tx packet scheduler descriptor tc max credit */
 void hw_atl_tps_tx_pkt_shed_desc_tc_max_credit_set(struct aq_hw_s *aq_hw,
-						   u32 max_credit,
-					    u32 tc);
+						   const u32 tc,
+						   const u32 max_credit);
 
 /* set tx packet scheduler descriptor tc weight */
 void hw_atl_tps_tx_pkt_shed_desc_tc_weight_set(struct aq_hw_s *aq_hw,
-					       u32 tx_pkt_shed_desc_tc_weight,
-					u32 tc);
+					       const u32 tc,
+					       const u32 weight);
 
 /* set tx packet scheduler descriptor vm arbitration mode */
 void hw_atl_tps_tx_pkt_shed_desc_vm_arb_mode_set(struct aq_hw_s *aq_hw,
@@ -796,18 +779,36 @@ void hw_atl_tps_tx_pkt_shed_desc_vm_arb_mode_set(struct aq_hw_s *aq_hw,
 
 /* set tx packet scheduler tc data max credit */
 void hw_atl_tps_tx_pkt_shed_tc_data_max_credit_set(struct aq_hw_s *aq_hw,
-						   u32 max_credit,
-					    u32 tc);
+						   const u32 tc,
+						   const u32 max_credit);
 
 /* set tx packet scheduler tc data weight */
 void hw_atl_tps_tx_pkt_shed_tc_data_weight_set(struct aq_hw_s *aq_hw,
-					       u32 tx_pkt_shed_tc_data_weight,
-					u32 tc);
+					       const u32 tc,
+					       const u32 weight);
+
+/* set tx descriptor rate mode */
+void hw_atl_tps_tx_desc_rate_mode_set(struct aq_hw_s *aq_hw,
+				      const u32 rate_mode);
+
+/* set tx packet scheduler descriptor rate enable */
+void hw_atl_tps_tx_desc_rate_en_set(struct aq_hw_s *aq_hw, const u32 desc,
+				    const u32 enable);
+
+/* set tx packet scheduler descriptor rate integral value */
+void hw_atl_tps_tx_desc_rate_x_set(struct aq_hw_s *aq_hw, const u32 desc,
+				   const u32 rate_int);
+
+/* set tx packet scheduler descriptor rate fractional value */
+void hw_atl_tps_tx_desc_rate_y_set(struct aq_hw_s *aq_hw, const u32 desc,
+				   const u32 rate_frac);
 
 /* tx */
 
 /* set tx register reset disable */
 void hw_atl_tx_tx_reg_res_dis_set(struct aq_hw_s *aq_hw, u32 tx_reg_res_dis);
+
+void hw_atl_tx_reset_set(struct aq_hw_s *aq_hw, u32 tx_reset);
 
 /* msm */
 

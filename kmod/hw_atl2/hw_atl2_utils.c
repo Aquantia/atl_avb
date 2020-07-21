@@ -1,67 +1,31 @@
-/*
- * aQuantia Corporation Network Driver
- * Copyright (C) 2014-2019 aQuantia Corporation. All rights reserved
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
+// SPDX-License-Identifier: GPL-2.0-only
+/* Atlantic Network Driver
+ * Copyright (C) 2020 Marvell International Ltd.
  */
 
 /* File hw_atl2_utils.c: Definition of common functions for Atlantic hardware
  * abstraction layer.
  */
 
-#include "../aq_nic.h"
-#include "../aq_hw_utils.h"
+#include "aq_nic.h"
+#include "aq_hw_utils.h"
+#include "hw_atl/hw_atl_utils.h"
 #include "hw_atl2_utils.h"
 #include "hw_atl2_internal.h"
+#include "../hw_atl/hw_atl_llh.h"
 #include "hw_atl2_llh.h"
 #include "hw_atl2_llh_internal.h"
 
 #include <linux/random.h>
 
-#define A2_FORCE_FLASHLESS       0
-
-#define HW_ATL2_MIF_CMD          0x0200U
-#define HW_ATL2_MIF_ADDR         0x0208U
-#define HW_ATL2_MIF_VAL          0x020CU
-
-#define HW_ATL2_FW_SM_RAM        0x2U
-#define HW_ATL2_FW_VERSION       0x18
-#define HW_ATL2_FW_VER 0x23000000U
-#define NO_HW_ATL2_FW_VER 0x00000U
-
-
-#define HW_ATL2_MPI_EFUSE_ADDR       0x364
-#define HW_ATL2_MPI_MBOX_ADDR        0x360
-#define HW_ATL2_MPI_RPC_ADDR         0x334
-
-#define HW_ATL2_MPI_CONTROL_ADDR     0x368
-#define HW_ATL2_MPI_CONTROL2_ADDR    0x36C
-#define HW_ATL2_MPI_CONTROL3_ADDR    0x374
-
-#define HW_ATL2_MPI_STATE_ADDR       0x370
-#define HW_ATL2_MPI_STATE2_ADDR      0x374
-
-#define HW_ATL2_EXT_CONTROL_ADDR	 0x378
-#define HW_ATL2_EXT_STATE_ADDR		 0x37c
-
-#define HW_ATL2_CAP_SLEEP_PROXY      BIT(CAPS_HI_SLEEP_PROXY)
-#define HW_ATL2_CAP_WOL              BIT(CAPS_HI_WOL)
-
-#define HW_ATL2_CAP_EEE_1G_MASK      BIT(CAPS_HI_1000BASET_FD_EEE)
-#define HW_ATL2_CAP_EEE_2G5_MASK     BIT(CAPS_HI_2P5GBASET_FD_EEE)
-#define HW_ATL2_CAP_EEE_5G_MASK      BIT(CAPS_HI_5GBASET_FD_EEE)
-#define HW_ATL2_CAP_EEE_10G_MASK     BIT(CAPS_HI_10GBASET_FD_EEE)
-
-#define HAL_ATLANTIC_WOL_FILTERS_COUNT   8
-#define HAL_ATLANTIC_UTILS_MSG_WOL  0x0E
+#define HW_ATL2_FW_VER_1X          0x01000000U
 
 #define AQ_A2_BOOT_STARTED         BIT(0x18)
 #define AQ_A2_CRASH_INIT           BIT(0x1B)
 #define AQ_A2_BOOT_CODE_FAILED     BIT(0x1C)
 #define AQ_A2_FW_INIT_FAILED       BIT(0x1D)
 #define AQ_A2_FW_INIT_COMP_SUCCESS BIT(0x1F)
+
 #define AQ_A2_FW_BOOT_FAILED_MASK (AQ_A2_CRASH_INIT | \
 				   AQ_A2_BOOT_CODE_FAILED | \
 				   AQ_A2_FW_INIT_FAILED)
@@ -73,20 +37,15 @@
 #define AQ_A2_FW_BOOT_REQ_MAC_FAST_BOOT BIT(0xA)
 #define AQ_A2_FW_BOOT_REQ_PHY_FAST_BOOT BIT(0xB)
 
-static int hw_atl2_utils_ver_match(u32 ver_expected, u32 ver_actual);
-
-
 int hw_atl2_utils_initfw(struct aq_hw_s *self, const struct aq_fw_ops **fw_ops)
 {
-	int err = 0;
-	
-	err = hw_atl2_utils_soft_reset(self);
-	if (err)
-		return err;
+	struct hw_atl2_priv *priv = (struct hw_atl2_priv *)self->priv;
+	u32 mif_rev = hw_atl_reg_glb_mif_id_get(self);
+	int err;
 
 	self->fw_ver_actual = hw_atl2_utils_get_fw_version(self);
 
-	if (hw_atl2_utils_ver_match(NO_HW_ATL2_FW_VER,
+	if (hw_atl_utils_ver_match(HW_ATL2_FW_VER_1X,
 				   self->fw_ver_actual) == 0) {
 		*fw_ops = &aq_a2_fw_ops;
 	} else {
@@ -97,6 +56,35 @@ int hw_atl2_utils_initfw(struct aq_hw_s *self, const struct aq_fw_ops **fw_ops)
 	aq_pr_trace("Detect ATL2FW %x\n", self->fw_ver_actual);
 	self->aq_fw_ops = *fw_ops;
 	err = self->aq_fw_ops->init(self);
+
+	self->chip_features |= ATL_HW_CHIP_ANTIGUA;
+
+	if ((AQ_MIF_ID_ATL_XX_MASK & mif_rev) == AQ_MIF_ID_ANT_A0)
+		self->chip_features |= ATL_HW_CHIP_REVISION_A0;
+
+	if ((AQ_MIF_ID_ATL_FPGA_MASK & mif_rev) == AQ_MIF_ID_ATL_FPGA_VAL) {
+		self->chip_features |= ATL_HW_CHIP_FPGA;
+		if ((AQ_MIF_ID_ATL_XX_MASK & mif_rev) == AQ_MIF_ID_FPGA_ATL2)
+			self->chip_features |= ATL_HW_CHIP_REVISION_A0;
+	}
+
+	if ((AQ_MIF_ID_ATL_XX_MASK & mif_rev) == AQ_MIF_ID_ATL2B0_OLD ||
+		(AQ_MIF_ID_ATL2_XX_MASK & mif_rev) == AQ_MIF_ID_ATL2B0 )
+		self->chip_features |=
+			ATL_HW_CHIP_REVISION_A0 |
+			ATL_HW_CHIP_REVISION_B0;
+
+	if ((AQ_MIF_ID_ATL2_FPGA2_MASK & mif_rev) == AQ_MIF_ID_ATL2_FPGA2_VAL)
+		self->chip_features |= ATL_HW_CHIP_FPGA;
+
+	self->mac_filter_max = priv->l2_filter_count;
+	self->vlan_filter_max = priv->vlan_filter_count;
+	self->etype_filter_max = priv->etype_filter_count;
+	self->l3l4_filter_max = min_t(u32, priv->l3_v4_filter_count,
+				      priv->l4_filter_count);
+
+	self->chip_features |= ATL_HW_CHIP_ANTIGUA;
+
 	return err;
 }
 
@@ -109,7 +97,7 @@ static bool hw_atl2_mcp_boot_complete(struct aq_hw_s *self)
 		return true;
 
 	/* Host boot requested */
-	if (hw_atl2_mif_host_req_int_get(self) & 0x1)
+	if (hw_atl2_mif_host_req_int_get(self) & HW_ATL2_MCP_HOST_REQ_INT_READY)
 		return true;
 
 	return false;
@@ -120,100 +108,77 @@ int hw_atl2_utils_soft_reset(struct aq_hw_s *self)
 	bool rbl_complete = false;
 	u32 rbl_status = 0;
 	u32 rbl_request;
-	int i, err = 0;
+	int err;
 
-	if( hw_atl2_mif_mcp_boot_ver_get(self) ) {
-		err = readx_poll_timeout_atomic(hw_atl2_mif_mcp_boot_reg_get,
-					self,
-					rbl_status,
-					(rbl_status & AQ_A2_BOOT_STARTED),
-					10, 500000);
-		if (err)
-			aq_pr_trace("Boot code probably hanged, reboot anyway");
+	hw_atl2_mif_host_req_int_clr(self, 1u);
+	rbl_request = AQ_A2_FW_BOOT_REQ_REBOOT;
+#ifdef AQ_CFG_FAST_START
+	rbl_request |= AQ_A2_FW_BOOT_REQ_MAC_FAST_BOOT;
+#endif
+	hw_atl2_mif_mcp_boot_reg_set(self, rbl_request);
 
-		hw_atl2_mif_host_req_int_clr(self, 0x01);
-		rbl_request = AQ_A2_FW_BOOT_REQ_REBOOT;
-	#ifdef AQ_CFG_FAST_START
-		rbl_request |= AQ_A2_FW_BOOT_REQ_MAC_FAST_BOOT;
-	#endif
-		hw_atl2_mif_mcp_boot_reg_set(self, rbl_request);
+	/* Wait for RBL boot */
+	err = readx_poll_timeout_atomic(hw_atl2_mif_mcp_boot_reg_get, self,
+				rbl_status,
+				((rbl_status & AQ_A2_BOOT_STARTED) &&
+				 (rbl_status != 0xFFFFFFFFu)),
+				10, 200000);
+	if (err) {
+		aq_pr_err("Boot code hanged");
+		goto err_exit;
+	}
 
-		/* Wait for RBL boot */
-		err = readx_poll_timeout_atomic(hw_atl2_mif_mcp_boot_reg_get,
-					self,
-					rbl_status,
-					(rbl_status & AQ_A2_BOOT_STARTED),
-					10, 500000);
-		if (err) {
-			aq_pr_err("Boot code hanged");
-			goto err_exit;
-		}
-
-
-		err = readx_poll_timeout_atomic(hw_atl2_mcp_boot_complete,
-					self,
+	err = readx_poll_timeout_atomic(hw_atl2_mcp_boot_complete, self,
 					rbl_complete,
 					rbl_complete,
-					10, 1000000);
+					10, 2000000);
 
+	if (err) {
+		aq_pr_err("FW Restart timed out");
+		goto err_exit;
+	}
+
+	rbl_status = hw_atl2_mif_mcp_boot_reg_get(self);
+
+	if (rbl_status & AQ_A2_FW_BOOT_FAILED_MASK) {
+		err = -EIO;
+		aq_pr_err("FW Restart failed");
+		goto err_exit;
+	}
+
+	if (hw_atl2_mif_host_req_int_get(self) &
+	    HW_ATL2_MCP_HOST_REQ_INT_READY) {
+		err = -EIO;
+		aq_pr_err("No FW detected. Dynamic FW load not implemented");
+		goto err_exit;
+	}
+
+	if (self->aq_fw_ops) {
+		err = self->aq_fw_ops->init(self);
 		if (err) {
-			aq_pr_err("FW Restart timed out");
+			aq_pr_err("FW Init failed");
 			goto err_exit;
-		}
-
-		rbl_status = hw_atl2_mif_mcp_boot_reg_get(self);
-
-		if (rbl_status & AQ_A2_FW_BOOT_FAILED_MASK) {
-			err = -EIO;
-			aq_pr_err("FW Restart failed");
-			goto err_exit;
-		}
-
-		if (hw_atl2_mif_host_req_int_get(self) & 0x1) {
-			err = -EIO;
-			aq_pr_err("No FW detected. Dynamic FW load not implemented");
-			goto err_exit;
-		}
-
-		if (self->aq_fw_ops) {
-			err = self->aq_fw_ops->init(self);
-			if (err) {
-				aq_pr_err("FW Init failed");
-				goto err_exit;
-			}
-		}
-		AQ_HW_SLEEP(1000);
-	} else {
-		aq_pr_trace("Non-RBL new reset sequence!\n");
-		hw_atl2_com_ful_reset_tgl(self);
-		AQ_HW_SLEEP(50);
-		for(i = 1000; ((hw_atl2_reg_glb_mif_id_get(self) & 0xf0f) != 0x103u) && i; i--)
-			udelay(100);
-
-		if( !i ) {
-			err = -ETIME;
-			return err;
 		}
 	}
+
 err_exit:
+	if (err) {
+		int i;
+		static u32 fail_status_regs[] = { HW_ATL2_MIF_BOOT_REG_ADR,
+						  0x3F0, 0x354, 0x358,
+						  0x35c, 0x308c,
+						};
+		aq_pr_err("Failure regdump:\n");
+		for (i = 0; i < ARRAY_SIZE(fail_status_regs); i++)
+			aq_pr_err("  rr 0x%04x = 0x%x\n",
+				  fail_status_regs[i],
+				  aq_hw_read_reg(self, fail_status_regs[i]));
+
+	}
 	return err;
 }
 
-static int hw_atl2_utils_ver_match(u32 ver_expected, u32 ver_actual)
-{
-	int err = 0;
-	const u32 dw_major_mask = 0xff000000U;
-	const u32 dw_minor_mask = 0x00ffffffU;
-
-	err = (dw_major_mask & (ver_expected ^ ver_actual)) ? -EOPNOTSUPP : 0;
-	if (err < 0)
-		goto err_exit;
-	err = ((dw_minor_mask & ver_expected) > (dw_minor_mask & ver_actual)) ?
-		-EOPNOTSUPP : 0;
-err_exit:
-	return err;
-}
-
+// TODO: this should be extended for A2
 static const u32 hw_atl2_utils_hw_mac_regs[] = {
 	0x00005580U, 0x00005590U, 0x000055B0U, 0x000055B4U,
 	0x000055C0U, 0x00005B00U, 0x00005B04U, 0x00005B08U,
@@ -233,26 +198,16 @@ static const u32 hw_atl2_utils_hw_mac_regs[] = {
 	0x00007C94U, 0x00007C98U, 0x00007C9CU, 0x00007CA0U,
 	0x00007CC0U, 0x00007CC4U, 0x00007CC8U, 0x00007CCCU,
 	0x00007CD0U, 0x00007CD4U, 0x00007CD8U, 0x00007CDCU,
-	0x00007CE0U, 0x00000300U, 0x00000304U, 0x00000308U,
-	0x0000030cU, 0x00000310U, 0x00000314U, 0x00000318U,
-	0x0000031cU, 0x00000360U, 0x00000364U, 0x00000368U,
-	0x0000036cU, 0x00000370U, 0x00000374U, 0x00006900U,
 };
 
 int hw_atl2_utils_hw_get_regs(struct aq_hw_s *self,
 			     const struct aq_hw_caps_s *aq_hw_caps,
 			     u32 *regs_buff)
 {
-	unsigned int i = 0U;
+	unsigned int i;
 
 	for (i = 0; i < aq_hw_caps->mac_regs_count; i++)
 		regs_buff[i] = aq_hw_read_reg(self,
 					      hw_atl2_utils_hw_mac_regs[i]);
 	return 0;
 }
-
-u32 hw_atl2_utils_get_fw_version(struct aq_hw_s *self)
-{
-	return aq_hw_read_reg(self, 0x13008);
-}
-//EOF

@@ -165,6 +165,7 @@ void aq_nic_cfg_start(struct aq_nic_s *self)
 
 	aq_nic_cfg_update_num_vecs(self);
 
+	cfg->num_irq_vecs = self->irqvecs;
 	cfg->irq_type = aq_pci_func_get_irq_type(self);
 
 	if ((cfg->irq_type == AQ_HW_IRQ_LEGACY) ||
@@ -197,6 +198,7 @@ void aq_nic_cfg_start(struct aq_nic_s *self)
 
 static int aq_nic_update_link_status(struct aq_nic_s *self)
 {
+	struct aq_hw_link_status_s *new_link_status = &self->aq_hw->aq_link_status;
 	int err = self->aq_fw_ops->update_link_status(self->aq_hw);
 	u32 fc = 0;
 
@@ -207,19 +209,19 @@ static int aq_nic_update_link_status(struct aq_nic_s *self)
 		self->aq_fw_ops->get_flow_control(self->aq_hw, &fc);
 	self->aq_nic_cfg.fc.cur = fc;
 
-	if (self->link_status.mbps != self->aq_hw->aq_link_status.mbps) {
+	if (self->link_status.mbps != new_link_status->mbps) {
 		netdev_info(self->ndev, "%s: link change old %d new %d\n",
 			    aq_ndev_driver_name, self->link_status.mbps,
-			    self->aq_hw->aq_link_status.mbps);
+			    new_link_status->mbps);
 		aq_nic_update_interrupt_moderation_settings(self);
 
 		if (self->aq_ptp) {
-			bool ptp_link_good = (self->aq_hw->aq_link_status.mbps >= 100 &&
-				 self->aq_hw->aq_link_status.full_duplex);
+			bool ptp_link_good = (new_link_status->mbps >= 100 &&
+				 new_link_status->full_duplex);
 			aq_ptp_clock_init(self,
 				ptp_link_good ? AQ_PTP_LINK_UP : AQ_PTP_NO_LINK);
 			aq_ptp_tm_offset_set(self,
-					     self->aq_hw->aq_link_status.mbps);
+					     new_link_status->mbps);
 			if( self->aq_hw_ops->apply_link_speed )
 				self->aq_hw_ops->apply_link_speed(self->aq_hw,
 					ptp_link_good ? self->aq_hw->aq_link_status.mbps : 0);
@@ -518,13 +520,7 @@ int aq_nic_init(struct aq_nic_s *self)
 			ptp_isr_vec = ptp_ext_vec = 0;
 		}
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-		err = aq_ptp_init(self, ptp_isr_vec, ptp_ext_vec,
-				self->msix_entry[ptp_isr_vec].vector,
-				self->msix_entry[ptp_ext_vec].vector);
-#else
 		err = aq_ptp_init(self, ptp_isr_vec, ptp_ext_vec);
-#endif
 
 		if (err < 0)
 			goto err_exit;
@@ -636,17 +632,12 @@ int aq_nic_start(struct aq_nic_s *self)
 		}
 
 		err = aq_ptp_irq_alloc(self);
-		if (err != 0)
+		if (err < 0)
 			goto err_exit;
 
 		if (cfg->link_irq_vec) {
-#ifdef pci_irq_vector_compat
-			int irqvec = pci_irq_vector_compat(self,
-							   cfg->link_irq_vec);
-#else
 			int irqvec = pci_irq_vector(self->pdev,
 						    cfg->link_irq_vec);
-#endif
 			err = request_threaded_irq(irqvec, NULL,
 						   aq_linkstate_threaded_isr,
 						   IRQF_SHARED | IRQF_ONESHOT,

@@ -154,25 +154,6 @@ int aq_pci_func_alloc_irq(struct aq_nic_s *self, unsigned int i,
 	struct pci_dev *pdev = self->pdev;
 	int err;
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)) || \
-	(RHEL_RELEASE_CODE && (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(7, 4)))
-	if (pdev->msix_enabled)
-		err = request_irq(self->msix_entry[i].vector, irq_handler, 0,
-				  name, irq_arg);
-	else if (pdev->msi_enabled)
-		err = request_irq(pdev->irq+i, irq_handler, 0, name, irq_arg);
-	else
-		err = request_irq(pdev->irq, aq_vec_isr_legacy,
-				  IRQF_SHARED, name, irq_arg);
-
-	if (err >= 0) {
-		self->msix_entry_mask |= (1 << i);
-
-		if (pdev->msix_enabled && affinity_mask)
-			irq_set_affinity_hint(self->msix_entry[i].vector,
-					      affinity_mask);
-	}
-#else
 	if (pdev->msix_enabled || pdev->msi_enabled)
 		err = request_irq(pci_irq_vector(pdev, i), irq_handler, 0,
 				  name, irq_arg);
@@ -187,7 +168,7 @@ int aq_pci_func_alloc_irq(struct aq_nic_s *self, unsigned int i,
 			irq_set_affinity_hint(pci_irq_vector(pdev, i),
 					      affinity_mask);
 	}
-#endif
+
 	return err;
 }
 
@@ -208,30 +189,9 @@ void aq_pci_func_free_irqs(struct aq_nic_s *self)
 		else
 			continue;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-		switch (aq_pci_func_get_irq_type(self)) {
-		case AQ_HW_IRQ_MSIX:
-			irq_set_affinity_hint(self->msix_entry[i].vector, NULL);
-			free_irq(self->msix_entry[i].vector, irq_data);
-			break;
-
-		case AQ_HW_IRQ_MSI:
-			free_irq(pdev->irq, irq_data);
-			break;
-
-		case AQ_HW_IRQ_LEGACY:
-			free_irq(pdev->irq, irq_data);
-			break;
-
-		default:
-			break;
-		}
-
-#else
 		if (pdev->msix_enabled)
 			irq_set_affinity_hint(pci_irq_vector(pdev, i), NULL);
 		free_irq(pci_irq_vector(pdev, i), irq_data);
-#endif
 		self->msix_entry_mask &= ~(1U << i);
 	}
 }

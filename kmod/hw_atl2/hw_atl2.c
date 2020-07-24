@@ -729,7 +729,7 @@ static int hw_atl2_hw_init(struct aq_hw_s *self, u8 *mac_addr)
 	/* Interrupts */
 	hw_atl_reg_irq_glb_ctl_set(self,
 		aq_hw_atl2_igcr_table_[aq_nic_cfg->irq_type]
-			[(aq_nic_cfg->link_irq_vec > 0) ?
+			[(aq_nic_cfg->num_irq_vecs > 0) ?
 				1 : 0]);
 
 	hw_atl_itr_irq_auto_masklsw_set(self, aq_nic_cfg->aq_hw_caps->irq_mask);

@@ -212,16 +212,24 @@ static inline void ether_addr_copy(u8 *dst, const u8 *src)
 	RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(7, 4)
 #define NETIF_F_GSO_PARTIAL 0
 #endif
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)) || \
-	(RHEL_RELEASE_CODE && (RHEL_RELEASE_CODE <= RHEL_RELEASE_VERSION(7, 4)))
-#define pci_irq_vector_compat(self, nr) \
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+#if	!RHEL_RELEASE_CODE || (RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(7, 5))
+#ifdef CONFIG_PCI_MSI
+#define pci_irq_vector_compat(pdev, nr) \
 ( \
-	(self->pdev->msix_enabled) ? \
-		self->msix_entry[nr].vector \
+	(pdev->msix_enabled) ? \
+		((struct aq_nic_s *)pci_get_drvdata(pdev))->msix_entry[nr].vector \
 		: \
-		self->pdev->irq + nr \
+		pdev->irq + nr \
 )
-#endif
+#else
+#define pci_irq_vector(pdev, nr) \
+( \
+    pdev->irq \
+)
+#endif /* CONFIG_PCI_MSI */
+#endif /* !RHELL || RHEL < 7.5 */
+#endif /* < 4.8.0 */
 
 #if !IS_ENABLED(CONFIG_CRC_ITU_T)
 u16 crc_itu_t(u16 crc, const u8 *buffer, size_t len);

@@ -49,13 +49,8 @@ static inline unsigned int aq_ptp_ring_idx(const enum aq_tc_mode tc_mode)
 #if IS_REACHABLE(CONFIG_PTP_1588_CLOCK)
 
 /* Common functions */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-int aq_ptp_init(struct aq_nic_s *aq_nic, unsigned int idx_ptp_vec,
-		unsigned int idx_ext_vec, unsigned int ptp_vec, unsigned int gpio_vec);
-#else
 int aq_ptp_init(struct aq_nic_s *aq_nic, unsigned int idx_ptp_vec,
 		unsigned int idx_ext_vec);
-#endif
 
 void aq_ptp_unregister(struct aq_nic_s *aq_nic);
 void aq_ptp_free(struct aq_nic_s *aq_nic);
@@ -117,13 +112,8 @@ struct aq_ptp_s {
 };
 
 /* Common functions */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-static inline int aq_ptp_init(struct aq_nic_s *aq_nic, unsigned int idx_ptp_vec,
-		unsigned int idx_ext_vec, unsigned int ptp_vec, unsigned int gpio_vec)
-#else
 static inline int aq_ptp_init(struct aq_nic_s *aq_nic, unsigned int idx_ptp_vec,
 		unsigned int idx_ext_vec)
-#endif
 {
 	return 0;
 }

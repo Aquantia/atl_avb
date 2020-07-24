@@ -167,10 +167,6 @@ struct aq_ptp_s {
 
 	struct ptp_tx_timeout ptp_tx_timeout;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-	unsigned int ptp_vector;
-	unsigned int ext_vector;
-#endif
 	unsigned int idx_ptp_vector;
 	unsigned int idx_ext_vector;
 	struct napi_struct napi;
@@ -818,7 +814,7 @@ static int aq_ptp_check_ext_gpio_event(struct aq_ptp_s *aq_ptp)
 }
 
 /* PTP external GPIO nanoseconds count */
-void aq_ptp_poll_sync_work_cb(struct work_struct *w)
+static void aq_ptp_poll_sync_work_cb(struct work_struct *w)
 {
 	struct delayed_work *dw = to_delayed_work(w);
 	struct aq_ptp_s *aq_ptp = container_of(dw, struct aq_ptp_s, poll_sync);
@@ -1598,7 +1594,7 @@ static irqreturn_t aq_ptp_isr(int irq, void *private)
 		err = -EINVAL;
 		goto err_exit;
 	}
-
+	aq_ptp->ptp_rx.stats.rx.irqs++;
 	napi_schedule(&aq_ptp->napi);
 
 err_exit:
@@ -1667,77 +1663,41 @@ void aq_ptp_service_task(struct aq_nic_s *aq_nic)
 
 int aq_ptp_irq_alloc(struct aq_nic_s *aq_nic)
 {
-	struct pci_dev *pdev = aq_nic->pdev;
 	struct aq_ptp_s *aq_ptp = aq_nic->aq_ptp;
-	int err1 = 0, err2 = 0;
+	struct pci_dev *pdev = aq_nic->pdev;
+	int err = 0;
 
 	if (!aq_ptp)
 		return 0;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-	if ((pdev->msix_enabled || pdev->msi_enabled) &&
-		aq_ptp->ext_vector ) {
+	if (!pdev->msix_enabled && !pdev->msi_enabled)
+		return -EINVAL;
 
-		err1 = request_irq(aq_ptp->ptp_vector, aq_ptp_isr, 0,
-				aq_nic->ndev->name, aq_ptp);
-#else
-	if ((pdev->msix_enabled || pdev->msi_enabled) &&
-		aq_ptp->idx_ext_vector ) {
+	err = request_irq(pci_irq_vector(pdev,
+					aq_ptp->idx_ptp_vector),
+					aq_ptp_isr, 0, aq_nic->ndev->name, aq_ptp);
 
-		err1 = request_irq(pci_irq_vector(pdev,
-						  aq_ptp->idx_ptp_vector),
-				  aq_ptp_isr, 0, aq_nic->ndev->name, aq_ptp);
-#endif
-	} else {
-		err1 = -EINVAL;
-	}
+	if(!err)
+		err = request_irq(pci_irq_vector(pdev,
+						aq_ptp->idx_ext_vector),
+						aq_ptp_isr, 0, aq_nic->ndev->name, aq_ptp);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-	if ((pdev->msix_enabled || pdev->msi_enabled) &&
-		aq_ptp->ext_vector ) {
-
-		err2 = request_irq(aq_ptp->ext_vector, aq_ext_ptp_isr, 0,
-				aq_nic->ndev->name, aq_ptp);
-#else
-	if ((pdev->msix_enabled || pdev->msi_enabled) &&
-		aq_ptp->idx_ext_vector ) {
-
-		err2 = request_irq(pci_irq_vector(pdev,
-						  aq_ptp->idx_ext_vector),
-				aq_ext_ptp_isr, 0, aq_nic->ndev->name, aq_ptp);
-#endif
-	} else {
-		err2 = -EINVAL;
-	}
-
-	return err1 | err2;
+	return err;
 }
 
 void aq_ptp_irq_free(struct aq_nic_s *aq_nic)
 {
 	struct aq_ptp_s *aq_ptp = aq_nic->aq_ptp;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
 	struct pci_dev *pdev = aq_nic->pdev;
-#endif
 
 	if (!aq_ptp)
 		return;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
     if( aq_ptp->idx_ptp_vector )
 		free_irq(pci_irq_vector(pdev, aq_ptp->idx_ptp_vector), aq_ptp);
-#else
-    if( aq_ptp->ptp_vector )
-		free_irq(aq_ptp->ptp_vector, aq_ptp);
-#endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
     if( aq_ptp->idx_ext_vector )
 		free_irq(pci_irq_vector(pdev, aq_ptp->idx_ext_vector), aq_ptp);
-#else
-    if( aq_ptp->ext_vector )
-		free_irq(aq_ptp->ext_vector, aq_ptp);
-#endif
 
 }
 
@@ -2162,33 +2122,32 @@ void aq_ptp_clock_init(struct aq_nic_s *aq_nic, enum aq_ptp_state state)
 	*/
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-int aq_ptp_init(struct aq_nic_s *aq_nic, unsigned int idx_ptp_vec,
-		unsigned int idx_ext_vec, unsigned int ptp_vec, unsigned int gpio_vec)
-#else
 int aq_ptp_init(struct aq_nic_s *aq_nic, unsigned int idx_ptp_vec,
 		unsigned int idx_ext_vec)
-#endif
 {
 	bool a1_ptp = ATL_HW_IS_CHIP_FEATURE(aq_nic->aq_hw, ATLANTIC);
 	bool a2_ptp = ATL_HW_IS_CHIP_FEATURE(aq_nic->aq_hw, ANTIGUA);
+	struct aq_ptp_s *aq_ptp = NULL;
 	struct hw_atl_utils_mbox mbox;
 	struct ptp_clock *clock;
-	struct aq_ptp_s *aq_ptp;
 	int err = 0;
 
-	if (!a1_ptp && !a2_ptp) {
-		aq_nic->aq_ptp = NULL;
-		return 0;
+	if (!a1_ptp && !a2_ptp)
+		goto err_exit;
+
+	/* PTP requires at least 2 free irq vectors for itself */
+	if (aq_nic->irqvecs <= AQ_HW_PTP_IRQS) {
+	    netdev_warn(aq_nic->ndev,
+	        "Disabling PTP due to insufficient number of available IRQ vectors.\n");
+	    goto err_exit;
 	}
 
 	if (a1_ptp) {
 		hw_atl_utils_mpi_read_stats(aq_nic->aq_hw, &mbox);
-		if (!(mbox.info.caps_ex & BIT(CAPS_EX_PHY_PTP_EN))) {
-			aq_nic->aq_ptp = NULL;
-			return 0;
+		if (!(mbox.info.caps_ex & BIT(CAPS_EX_PHY_PTP_EN)))
+			goto err_exit;
 		}
-	} else if (a2_ptp) {
+	else if (a2_ptp) {
 		//TODO A2 GPIO config read
 		memset(&mbox, 0, sizeof(mbox));
 		if (ATL_HW_IS_CHIP_FEATURE(aq_nic->aq_hw, FPGA)) {
@@ -2262,10 +2221,6 @@ int aq_ptp_init(struct aq_nic_s *aq_nic, unsigned int idx_ptp_vec,
 	netif_napi_add(aq_nic_get_ndev(aq_nic), &aq_ptp->napi,
 		       aq_ptp_poll, AQ_CFG_NAPI_WEIGHT);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0)
-	aq_ptp->ptp_vector = ptp_vec;
-	aq_ptp->ext_vector = ext_vec;
-#endif
 	aq_ptp->idx_ptp_vector = idx_ptp_vec;
 	aq_ptp->idx_ext_vector = idx_ext_vec;
 
